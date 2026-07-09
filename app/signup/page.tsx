@@ -64,7 +64,7 @@ function SignupForm() {
               id="companyName"
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="e.g. Castlewood Door Mfg"
+              placeholder="e.g. Acme Manufacturing"
               required
             />
           </div>
