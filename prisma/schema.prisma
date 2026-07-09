@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  companyName  String
+  createdAt    DateTime @default(now())
+
+  // Forecast settings — only meaningful when this user IS a company (activeCompanyId is null).
+  // Members who joined another company via invite read/write the owner's row instead.
+  startingBalance Float    @default(0)
+  totalWeeks      Int      @default(12)
+  bearPct         Float    @default(-10)
+  bullPct         Float    @default(10)
+  forecastStart   DateTime @default(now())
+
+  // If set, this user operates on another user's (the "company owner's") data instead of
+  // their own. Null means this user is their own company.
+  activeCompanyId String?
+  companyOwner    User?    @relation("CompanyMembers", fields: [activeCompanyId], references: [id], onDelete: SetNull)
+  members         User[]   @relation("CompanyMembers")
+
+  // Data owned by this row when it is acting as a company (activeCompanyId is null on the owner).
+  items     LineItem[]
+  overrides Override[]
+
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  companyId  String // the User.id whose company this invite grants access to
+  email      String
+  token      String    @unique
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+
+  @@index([companyId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  @@index([userId])
+}
+
+model LineItem {
+  id        String   @id @default(cuid())
+  userId    String // company owner's User.id, not necessarily the creator
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String // "income" | "expense"
+  category  String
+  name      String
+  amount    Float
+  frequency String // "onetime" | "weekly" | "biweekly" | "monthly"
+  startWeek Int
+  lineLabel String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Override {
+  id     String @id @default(cuid())
+  userId String // company owner's User.id, not necessarily the creator
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   String // "income" | "expense"
+  label  String
+  week   Int
+  value  Float
+
+  @@unique([userId, type, label, week])
+  @@index([userId])
+}
