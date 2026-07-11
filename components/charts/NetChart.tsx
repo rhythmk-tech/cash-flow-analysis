@@ -40,7 +40,14 @@ export default function NetChart({ weekly }: { weekly: WeekRow[] }) {
         return <rect key={w.week} x={x} y={top} width={barW} height={h} fill={color} opacity={0.55} rx={3} />;
       })}
       <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke={COLORS.expense} strokeWidth={1} strokeDasharray="3 3" />
-      <polyline points={points} fill="none" stroke={COLORS.ink} strokeWidth={2.25} />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={COLORS.ink}
+        strokeWidth={2.25}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {weekly.map((w, i) => (
         <circle key={w.week} cx={padL + i * bw + bw / 2} cy={yFor(w.balance)} r={2.5} fill={COLORS.ink} />
       ))}

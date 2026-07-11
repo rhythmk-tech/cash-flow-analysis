@@ -45,7 +45,14 @@ export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
       })}
       <path d={areaPath} fill="url(#trajFill)" />
       <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke={COLORS.expense} strokeWidth={1} strokeDasharray="3 3" />
-      <polyline points={points} fill="none" stroke={COLORS.accent} strokeWidth={2.75} />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={COLORS.accent}
+        strokeWidth={2.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {weekly.map((w, i) => (
         <circle key={w.week} cx={xFor(i)} cy={yFor(w.balance)} r={4} fill={COLORS.ink} stroke="white" strokeWidth={1.5} />
       ))}

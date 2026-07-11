@@ -40,9 +40,32 @@ export default function ScenarioChart({
         );
       })}
       <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke={COLORS.expense} strokeWidth={1} strokeDasharray="3 3" />
-      <polyline points={toPoints(bear)} fill="none" stroke={COLORS.expense} strokeWidth={2} strokeDasharray="6 4" />
-      <polyline points={toPoints(base)} fill="none" stroke={COLORS.ink} strokeWidth={2.5} />
-      <polyline points={toPoints(bull)} fill="none" stroke={COLORS.income} strokeWidth={2} strokeDasharray="1 4" strokeLinecap="round" />
+      <polyline
+        points={toPoints(bear)}
+        fill="none"
+        stroke={COLORS.expense}
+        strokeWidth={2}
+        strokeDasharray="6 4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polyline
+        points={toPoints(base)}
+        fill="none"
+        stroke={COLORS.ink}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <polyline
+        points={toPoints(bull)}
+        fill="none"
+        stroke={COLORS.income}
+        strokeWidth={2}
+        strokeDasharray="1 4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       {base.map((w, i) =>
         i % step === 0 ? (
           <text key={w.week} x={xFor(i)} y={H - 6} fontSize={10} fill={COLORS.inkMuted} textAnchor="middle">

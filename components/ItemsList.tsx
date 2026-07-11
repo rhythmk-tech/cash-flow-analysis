@@ -18,9 +18,10 @@ export default function ItemsList({
       <div className="items-count">Current items ({items.length})</div>
       <div className="items-list">
         {items.length === 0 ? (
-          <p style={{ fontSize: 13, color: "var(--inkMuted)" }}>
-            No items yet — add your first one above.
-          </p>
+          <div style={{ textAlign: "center", padding: "18px 8px", color: "var(--inkMuted)" }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>📭</div>
+            <p style={{ fontSize: 13, margin: 0 }}>No items yet — add your first one above.</p>
+          </div>
         ) : (
           items.map((item) => (
             <div
