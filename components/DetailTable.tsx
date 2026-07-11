@@ -40,6 +40,7 @@ function EditableRow({
   overrides,
   totalWeeks,
   weekHeaders,
+  forecastStart,
   onEditOverride,
 }: {
   type: ItemType;
@@ -48,13 +49,14 @@ function EditableRow({
   overrides: OverrideMap;
   totalWeeks: number;
   weekHeaders: number[];
+  forecastStart: Date;
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
 }) {
   return (
     <tr className="dt-line">
       <td>{label}</td>
       {weekHeaders.map((w) => {
-        const value = getRowWeekAmount(items, overrides, type, label, w, totalWeeks);
+        const value = getRowWeekAmount(items, overrides, type, label, w, totalWeeks, forecastStart);
         const isEdited = Object.prototype.hasOwnProperty.call(overrides, overrideKey(type, label, w));
         return (
           <td key={w}>
@@ -184,6 +186,7 @@ export default function DetailTable({
                 overrides={overrides}
                 totalWeeks={totalWeeks}
                 weekHeaders={weekHeaders}
+                forecastStart={forecastStart}
                 onEditOverride={onEditOverride}
               />
             ))}
@@ -211,6 +214,7 @@ export default function DetailTable({
                 overrides={overrides}
                 totalWeeks={totalWeeks}
                 weekHeaders={weekHeaders}
+                forecastStart={forecastStart}
                 onEditOverride={onEditOverride}
               />
             ))}

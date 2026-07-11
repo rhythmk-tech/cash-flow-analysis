@@ -1,17 +1,19 @@
 "use client";
 
-import { FREQ_LABELS, LineItem, money } from "@/lib/forecast";
+import { FREQ_LABELS, LineItem, dateForWeek, money } from "@/lib/forecast";
 
 export default function ItemsList({
   items,
   editingItemId,
   onEdit,
   onDelete,
+  forecastStart,
 }: {
   items: LineItem[];
   editingItemId?: string | null;
   onEdit: (item: LineItem) => void;
   onDelete: (id: string) => void;
+  forecastStart: Date;
 }) {
   return (
     <div className="items-section">
@@ -34,7 +36,11 @@ export default function ItemsList({
                 <div style={{ minWidth: 0 }}>
                   <div className="item-name">{item.name}</div>
                   <div className="item-meta">
-                    {item.category} · {FREQ_LABELS[item.frequency]} · wk {item.startWeek}
+                    {item.category} · {FREQ_LABELS[item.frequency]} · starts{" "}
+                    {dateForWeek(item.startWeek, forecastStart).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
                   </div>
                 </div>
               </div>

@@ -28,7 +28,7 @@ export const FREQ_LABELS: Record<Frequency, string> = {
   onetime: "One-time",
   weekly: "Weekly",
   biweekly: "Every 2 weeks",
-  monthly: "Monthly (every 4 wks)",
+  monthly: "Monthly (1st of each month)",
 };
 
 export const EXPENSE_CATEGORIES = [
@@ -63,14 +63,29 @@ export function overrideKey(type: ItemType, label: string, week: number): string
   return `${type}::${label}::${week}`;
 }
 
-export function occurrencesFor(item: LineItem, totalWeeks: number): number[] {
+// Recurring items are scheduled by real calendar dates, not a fixed week-count step —
+// months are 28-31 days, so "every 4 weeks" drifts away from actual month boundaries
+// over a few cycles. occurrencesFor takes forecastStart so it can convert between the
+// forecast's week-index grid and real dates.
+export function occurrencesFor(item: LineItem, totalWeeks: number, forecastStart: Date): number[] {
   const weeks: number[] = [];
   const start = Math.max(1, item.startWeek || 1);
   if (item.frequency === "onetime") {
     if (start <= totalWeeks) weeks.push(start);
     return weeks;
   }
-  const step = item.frequency === "weekly" ? 1 : item.frequency === "biweekly" ? 2 : 4;
+  if (item.frequency === "monthly") {
+    const startDate = dateForWeek(start, forecastStart);
+    let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    for (let i = 0; i < 36; i++) {
+      const wk = weekNumberForDate(cursor, forecastStart);
+      if (wk > totalWeeks) break;
+      if (wk >= 1) weeks.push(wk);
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return weeks;
+  }
+  const step = item.frequency === "weekly" ? 1 : 2; // biweekly
   for (let w = start; w <= totalWeeks; w += step) weeks.push(w);
   return weeks;
 }
@@ -80,13 +95,14 @@ function sumItemsForLabelWeek(
   type: ItemType,
   label: string,
   week: number,
-  totalWeeks: number
+  totalWeeks: number,
+  forecastStart: Date
 ): number {
   let total = 0;
   for (const it of items) {
     if (it.type !== type) continue;
     if ((it.lineLabel || it.category) !== label) continue;
-    if (occurrencesFor(it, totalWeeks).includes(week)) total += it.amount;
+    if (occurrencesFor(it, totalWeeks, forecastStart).includes(week)) total += it.amount;
   }
   return total;
 }
@@ -97,11 +113,12 @@ export function getRowWeekAmount(
   type: ItemType,
   label: string,
   week: number,
-  totalWeeks: number
+  totalWeeks: number,
+  forecastStart: Date
 ): number {
   const key = overrideKey(type, label, week);
   if (Object.prototype.hasOwnProperty.call(overrides, key)) return overrides[key];
-  return sumItemsForLabelWeek(items, type, label, week, totalWeeks);
+  return sumItemsForLabelWeek(items, type, label, week, totalWeeks, forecastStart);
 }
 
 export function getRowLabels(items: LineItem[], type: ItemType): string[] {
@@ -128,7 +145,8 @@ export function computeWeekly(
   items: LineItem[],
   overrides: OverrideMap,
   startingBalance: number,
-  totalWeeks: number
+  totalWeeks: number,
+  forecastStart: Date
 ): WeekRow[] {
   const incomeLabels = getRowLabels(items, "income");
   const expenseLabels = getRowLabels(items, "expense");
@@ -143,13 +161,13 @@ export function computeWeekly(
     const expenseByCat: Record<string, number> = {};
 
     incomeLabels.forEach((label) => {
-      const amt = getRowWeekAmount(items, overrides, "income", label, w, totalWeeks);
+      const amt = getRowWeekAmount(items, overrides, "income", label, w, totalWeeks, forecastStart);
       income += amt;
       const cat = labelToCategory[label] || label;
       incomeByCat[cat] = (incomeByCat[cat] || 0) + amt;
     });
     expenseLabels.forEach((label) => {
-      const amt = getRowWeekAmount(items, overrides, "expense", label, w, totalWeeks);
+      const amt = getRowWeekAmount(items, overrides, "expense", label, w, totalWeeks, forecastStart);
       expense += amt;
       const cat = labelToCategory[label] || label;
       expenseByCat[cat] = (expenseByCat[cat] || 0) + amt;
@@ -172,7 +190,8 @@ export function computeScenario(
   overrides: OverrideMap,
   startingBalance: number,
   totalWeeks: number,
-  pct: number
+  pct: number,
+  forecastStart: Date
 ): ScenarioPoint[] {
   const incomeLabels = getRowLabels(items, "income");
   const expenseLabels = getRowLabels(items, "expense");
@@ -184,10 +203,10 @@ export function computeScenario(
     let income = 0,
       expense = 0;
     incomeLabels.forEach((label) => {
-      income += getRowWeekAmount(items, overrides, "income", label, w, totalWeeks) * scaleFactor;
+      income += getRowWeekAmount(items, overrides, "income", label, w, totalWeeks, forecastStart) * scaleFactor;
     });
     expenseLabels.forEach((label) => {
-      expense += getRowWeekAmount(items, overrides, "expense", label, w, totalWeeks);
+      expense += getRowWeekAmount(items, overrides, "expense", label, w, totalWeeks, forecastStart);
     });
     running += income - expense;
     weeks.push({ week: w, balance: running });
@@ -195,8 +214,19 @@ export function computeScenario(
   return weeks;
 }
 
+export function dateForWeek(weekNum: number, forecastStart: Date): Date {
+  return new Date(forecastStart.getTime() + (weekNum - 1) * 7 * 86400000);
+}
+
+// Raw (unclamped) week index for a date — can be <1 for dates before forecastStart.
+// Callers that need a valid startWeek should clamp with Math.max(1, ...) themselves.
+export function weekNumberForDate(date: Date, forecastStart: Date): number {
+  const diffDays = Math.round((date.getTime() - forecastStart.getTime()) / 86400000);
+  return Math.floor(diffDays / 7) + 1;
+}
+
 export function weekDateRange(weekNum: number, forecastStart: Date): string {
-  const start = new Date(forecastStart.getTime() + (weekNum - 1) * 7 * 86400000);
+  const start = dateForWeek(weekNum, forecastStart);
   const end = new Date(start.getTime() + 6 * 86400000);
   const fmt = (d: Date) => `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
   return `${fmt(start)}-${fmt(end)}`;

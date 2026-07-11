@@ -77,21 +77,21 @@ export default function DashboardClient({
   }, [overridesArr]);
 
   const weekly = useMemo(
-    () => computeWeekly(items, overridesMap, settings.startingBalance, settings.totalWeeks),
-    [items, overridesMap, settings.startingBalance, settings.totalWeeks]
+    () => computeWeekly(items, overridesMap, settings.startingBalance, settings.totalWeeks, forecastStart),
+    [items, overridesMap, settings.startingBalance, settings.totalWeeks, forecastStart]
   );
 
   const bear = useMemo(
-    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bearPct),
-    [items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bearPct]
+    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bearPct, forecastStart),
+    [items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bearPct, forecastStart]
   );
   const base = useMemo(
-    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, 0),
-    [items, overridesMap, settings.startingBalance, settings.totalWeeks]
+    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, 0, forecastStart),
+    [items, overridesMap, settings.startingBalance, settings.totalWeeks, forecastStart]
   );
   const bull = useMemo(
-    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct),
-    [items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct]
+    () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct, forecastStart),
+    [items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct, forecastStart]
   );
 
   const tips = useMemo(() => computeTips(weekly, settings.startingBalance), [weekly, settings.startingBalance]);
@@ -275,6 +275,7 @@ export default function DashboardClient({
               editingItem={items.find((i) => i.id === editingItemId) || null}
               onSave={handleSaveItem}
               onCancelEdit={() => setEditingItemId(null)}
+              forecastStart={forecastStart}
             />
             <div className="card">
               <ItemsList
@@ -282,6 +283,7 @@ export default function DashboardClient({
                 editingItemId={editingItemId}
                 onEdit={(item) => setEditingItemId(item.id)}
                 onDelete={handleDeleteItem}
+                forecastStart={forecastStart}
               />
             </div>
             <ImportPanel onImported={handleImported} autoOpen={isEmpty} />

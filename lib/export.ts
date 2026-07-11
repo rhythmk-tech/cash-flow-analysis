@@ -43,7 +43,7 @@ export function detailedForecastToCsv(
 
   const rowFor = (label: string, values: number[]) => csvRow([label, ...values.map((v) => v.toFixed(2))]);
   const amountsFor = (type: ItemType, label: string) =>
-    weekHeaders.map((w) => getRowWeekAmount(items, overrides, type, label, w, totalWeeks));
+    weekHeaders.map((w) => getRowWeekAmount(items, overrides, type, label, w, totalWeeks, forecastStart));
 
   lines.push(rowFor("OPENING CASH BALANCE", weekly.map((w) => w.balance - w.net)));
   lines.push("");

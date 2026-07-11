@@ -8,6 +8,10 @@ import {
   Frequency,
   ItemType,
   LineItem,
+  dateForWeek,
+  formatDateOnly,
+  parseDateOnly,
+  weekNumberForDate,
 } from "@/lib/forecast";
 
 const NEW_CATEGORY_VALUE = "__new__";
@@ -28,19 +32,21 @@ export default function AddItemForm({
   editingItem,
   onSave,
   onCancelEdit,
+  forecastStart,
 }: {
   items: LineItem[];
   onAdd: (payload: NewItemPayload) => Promise<void>;
   editingItem?: LineItem | null;
   onSave?: (id: string, payload: NewItemPayload) => Promise<void>;
   onCancelEdit?: () => void;
+  forecastStart: Date;
 }) {
   const [formType, setFormType] = useState<ItemType>("expense");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [amount, setAmount] = useState("");
-  const [startWeek, setStartWeek] = useState("1");
+  const [startDate, setStartDate] = useState(() => formatDateOnly(forecastStart));
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,9 +59,9 @@ export default function AddItemForm({
     setCategory(editingItem.category);
     setNewCategory("");
     setAmount(String(editingItem.amount));
-    setStartWeek(String(editingItem.startWeek));
+    setStartDate(formatDateOnly(dateForWeek(editingItem.startWeek, forecastStart)));
     setFrequency(editingItem.frequency);
-  }, [editingItem]);
+  }, [editingItem, forecastStart]);
 
   const categories = useMemo(() => {
     const base = formType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -69,7 +75,7 @@ export default function AddItemForm({
     setName("");
     setAmount("");
     setNewCategory("");
-    setStartWeek("1");
+    setStartDate(formatDateOnly(forecastStart));
     setFrequency("monthly");
   }
 
@@ -81,7 +87,9 @@ export default function AddItemForm({
       if (!finalCategory) return;
     }
     const amt = Number(amount);
-    if (!name.trim() || !Number.isFinite(amt) || amt <= 0 || !finalCategory) return;
+    if (!name.trim() || !Number.isFinite(amt) || amt <= 0 || !finalCategory || !startDate) return;
+
+    const startWeek = Math.max(1, weekNumberForDate(parseDateOnly(startDate), forecastStart));
 
     const payload: NewItemPayload = {
       type: formType,
@@ -89,7 +97,7 @@ export default function AddItemForm({
       name: name.trim(),
       amount: amt,
       frequency,
-      startWeek: Math.max(1, Number(startWeek) || 1),
+      startWeek,
       lineLabel: finalCategory,
     };
 
@@ -165,13 +173,11 @@ export default function AddItemForm({
             onChange={(e) => setAmount(e.target.value)}
           />
           <input
-            type="number"
+            type="date"
             className="mono"
-            placeholder="Start wk"
-            min={1}
-            style={{ width: 90 }}
-            value={startWeek}
-            onChange={(e) => setStartWeek(e.target.value)}
+            title="Date this payment or income first occurs"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
           />
         </div>
         <select value={frequency} onChange={(e) => setFrequency(e.target.value as Frequency)}>
