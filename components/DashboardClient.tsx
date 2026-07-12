@@ -237,7 +237,10 @@ export default function DashboardClient({
               <span className="kpi-label">Total income</span>
               <span className="kpi-icon" style={{ color: "var(--income)" }}>↑</span>
             </div>
-            <div className="kpi-value" style={{ color: "var(--income)" }}>{money(totalIncome)}</div>
+            <div className="kpi-value" style={{ color: "var(--income)" }}>
+              {money(totalIncome)}
+              <span className="kpi-value-sub">(Weeks 1–{settings.totalWeeks})</span>
+            </div>
           </div>
           <div className="kpi-card" style={{ ["--bar-color" as string]: "var(--expense)" }}>
             <div className="kpi-top">
@@ -263,6 +266,7 @@ export default function DashboardClient({
             </div>
             <div className="kpi-value" style={{ color: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}>
               {money(minWeek.balance)}
+              <span className="kpi-value-sub">(Week {minWeek.week})</span>
             </div>
           </div>
         </div>

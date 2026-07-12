@@ -42,7 +42,6 @@ export default function AddItemForm({
   forecastStart: Date;
 }) {
   const [formType, setFormType] = useState<ItemType>("expense");
-  const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [amount, setAmount] = useState("");
@@ -55,7 +54,6 @@ export default function AddItemForm({
   useEffect(() => {
     if (!editingItem) return;
     setFormType(editingItem.type);
-    setName(editingItem.name);
     setCategory(editingItem.category);
     setNewCategory("");
     setAmount(String(editingItem.amount));
@@ -72,7 +70,6 @@ export default function AddItemForm({
   const selectedCategory = category || categories[0] || "";
 
   function resetForm() {
-    setName("");
     setAmount("");
     setNewCategory("");
     setStartDate(formatDateOnly(forecastStart));
@@ -87,14 +84,14 @@ export default function AddItemForm({
       if (!finalCategory) return;
     }
     const amt = Number(amount);
-    if (!name.trim() || !Number.isFinite(amt) || amt <= 0 || !finalCategory || !startDate) return;
+    if (!Number.isFinite(amt) || amt <= 0 || !finalCategory || !startDate) return;
 
     const startWeek = Math.max(1, weekNumberForDate(parseDateOnly(startDate), forecastStart));
 
     const payload: NewItemPayload = {
       type: formType,
       category: finalCategory,
-      name: name.trim(),
+      name: finalCategory,
       amount: amt,
       frequency,
       startWeek,
@@ -144,11 +141,6 @@ export default function AddItemForm({
         </button>
       </div>
       <form className="form-col" onSubmit={handleSubmit}>
-        <input
-          placeholder="Name (e.g. Electricity bill)"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
         <select value={selectedCategory} onChange={(e) => setCategory(e.target.value)}>
           {categories.map((c) => (
             <option key={c} value={c}>

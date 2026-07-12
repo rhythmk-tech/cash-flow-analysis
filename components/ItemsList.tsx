@@ -36,7 +36,8 @@ export default function ItemsList({
                 <div style={{ minWidth: 0 }}>
                   <div className="item-name">{item.name}</div>
                   <div className="item-meta">
-                    {item.category} · {FREQ_LABELS[item.frequency]} · starts{" "}
+                    {item.category !== item.name ? `${item.category} · ` : ""}
+                    {FREQ_LABELS[item.frequency]} · starts{" "}
                     {dateForWeek(item.startWeek, forecastStart).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",

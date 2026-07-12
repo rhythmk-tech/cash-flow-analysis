@@ -119,6 +119,10 @@ input.mono { font-family: 'JetBrains Mono', monospace; }
   background: color-mix(in srgb, currentColor 14%, transparent);
 }
 .kpi-value { font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.3px; }
+.kpi-value-sub {
+  font-size: 12.5px; font-weight: 500; font-family: 'Inter', sans-serif; color: var(--inkFaint);
+  letter-spacing: 0; margin-left: 6px;
+}
 
 /* ---- main layout ---- */
 .layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
