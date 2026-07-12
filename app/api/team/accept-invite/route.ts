@@ -22,6 +22,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "You can't join your own company." }, { status: 400 });
   }
 
+  // The invite is bound to a specific recipient — merely holding the link (which can leak via
+  // forwarding, shared clipboards, chat history, etc.) must not be sufficient to join the company.
+  const currentUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { email: true } });
+  if (!currentUser || currentUser.email.toLowerCase() !== invitation.email.toLowerCase()) {
+    return NextResponse.json(
+      { error: `This invite was sent to ${invitation.email}. Log in with that email to accept it.` },
+      { status: 403 }
+    );
+  }
+
   await prisma.$transaction([
     prisma.user.update({ where: { id: session.userId }, data: { activeCompanyId: invitation.companyId } }),
     prisma.invitation.update({ where: { id: invitation.id }, data: { acceptedAt: new Date() } }),
