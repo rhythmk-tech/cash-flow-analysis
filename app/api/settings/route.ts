@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canEditData } from "@/lib/roles";
 import { formatDateOnly, parseDateOnly } from "@/lib/forecast";
 
 function serialize(user: {
@@ -36,6 +37,9 @@ export async function GET() {
 export async function PUT(req: Request) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canEditData(session.role)) {
+    return NextResponse.json({ error: "Viewers can't change settings." }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const data: Record<string, number | Date> = {};

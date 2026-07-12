@@ -55,10 +55,12 @@ export default function DashboardClient({
   initialItems,
   initialOverrides,
   initialSettings,
+  canEdit,
 }: {
   initialItems: LineItem[];
   initialOverrides: OverrideRecord[];
   initialSettings: Settings;
+  canEdit: boolean;
 }) {
   const [items, setItems] = useState<LineItem[]>(initialItems);
   const [overridesArr, setOverridesArr] = useState<OverrideRecord[]>(initialOverrides);
@@ -207,6 +209,7 @@ export default function DashboardClient({
                 type="number"
                 className="mono"
                 defaultValue={settings.startingBalance}
+                disabled={!canEdit}
                 onChange={(e) => saveSettingsDebounced({ startingBalance: Number(e.target.value) || 0 })}
               />
             </label>
@@ -218,6 +221,7 @@ export default function DashboardClient({
                 max={26}
                 style={{ width: 44 }}
                 defaultValue={settings.totalWeeks}
+                disabled={!canEdit}
                 onChange={(e) =>
                   saveSettingsDebounced({ totalWeeks: Math.min(26, Math.max(4, Number(e.target.value) || 12)) })
                 }
@@ -273,14 +277,16 @@ export default function DashboardClient({
 
         <div className="layout">
           <div className="sidebar">
-            <AddItemForm
-              items={items}
-              onAdd={handleAddItem}
-              editingItem={items.find((i) => i.id === editingItemId) || null}
-              onSave={handleSaveItem}
-              onCancelEdit={() => setEditingItemId(null)}
-              forecastStart={forecastStart}
-            />
+            {canEdit && (
+              <AddItemForm
+                items={items}
+                onAdd={handleAddItem}
+                editingItem={items.find((i) => i.id === editingItemId) || null}
+                onSave={handleSaveItem}
+                onCancelEdit={() => setEditingItemId(null)}
+                forecastStart={forecastStart}
+              />
+            )}
             <div className="card">
               <ItemsList
                 items={items}
@@ -288,9 +294,12 @@ export default function DashboardClient({
                 onEdit={(item) => setEditingItemId(item.id)}
                 onDelete={handleDeleteItem}
                 forecastStart={forecastStart}
+                canEdit={canEdit}
               />
             </div>
-            <ImportPanel onImported={handleImported} autoOpen={isEmpty} forecastStart={forecastStart} />
+            {canEdit && (
+              <ImportPanel onImported={handleImported} autoOpen={isEmpty} forecastStart={forecastStart} />
+            )}
           </div>
 
           <div className="main-col">
@@ -302,24 +311,31 @@ export default function DashboardClient({
                   pre-filled, so charts and insights will appear as soon as you have at least
                   one income or expense item.
                 </span>
-                <div className="onboarding-steps">
-                  <div className="onboarding-step">
-                    <h3>➕ Add items one at a time</h3>
-                    <p>
-                      Use the &quot;Add a line item&quot; form on the left for individual income
-                      sources or expenses — rent, payroll, recurring revenue, loan payments, and
-                      so on.
-                    </p>
+                {canEdit ? (
+                  <div className="onboarding-steps">
+                    <div className="onboarding-step">
+                      <h3>➕ Add items one at a time</h3>
+                      <p>
+                        Use the &quot;Add a line item&quot; form on the left for individual income
+                        sources or expenses — rent, payroll, recurring revenue, loan payments, and
+                        so on.
+                      </p>
+                    </div>
+                    <div className="onboarding-step">
+                      <h3>📄 Import a file in bulk</h3>
+                      <p>
+                        Already have your income and expenses in a spreadsheet? Open &quot;Bulk
+                        import&quot; on the left, download the template, and upload your own file
+                        to populate everything at once.
+                      </p>
+                    </div>
                   </div>
-                  <div className="onboarding-step">
-                    <h3>📄 Import a CSV in bulk</h3>
-                    <p>
-                      Already have your income and expenses in a spreadsheet? Open &quot;Bulk
-                      import from CSV&quot; on the left, download the template, and upload your
-                      own file to populate everything at once.
-                    </p>
-                  </div>
-                </div>
+                ) : (
+                  <p className="sub" style={{ marginTop: 4 }}>
+                    You have view-only access — ask an Owner or Admin on this team to add income
+                    and expense data.
+                  </p>
+                )}
               </div>
             ) : (
               <>
@@ -384,6 +400,7 @@ export default function DashboardClient({
                         type="number"
                         className="mono"
                         defaultValue={settings.bearPct}
+                        disabled={!canEdit}
                         onChange={(e) => saveSettingsDebounced({ bearPct: Number(e.target.value) || 0 })}
                       />
                       % revenue
@@ -397,6 +414,7 @@ export default function DashboardClient({
                         type="number"
                         className="mono"
                         defaultValue={settings.bullPct}
+                        disabled={!canEdit}
                         onChange={(e) => saveSettingsDebounced({ bullPct: Number(e.target.value) || 0 })}
                       />
                       % revenue
@@ -495,6 +513,7 @@ export default function DashboardClient({
                   forecastStart={forecastStart}
                   onEditOverride={handleEditOverride}
                   onForecastStartChange={handleForecastStartChange}
+                  canEdit={canEdit}
                 />
               </div>
             )}

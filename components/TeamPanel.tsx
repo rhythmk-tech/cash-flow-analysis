@@ -2,16 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  ASSIGNABLE_ROLES,
+  EffectiveRole,
+  MemberRole,
+  ROLE_DESCRIPTIONS,
+  ROLE_LABELS,
+  canRemoveMember,
+} from "@/lib/roles";
 
 interface Member {
   id: string;
   email: string;
   isOwner: boolean;
+  role: EffectiveRole;
 }
 
 interface PendingInvitation {
   id: string;
   email: string;
+  role: MemberRole;
   token: string;
   createdAt: string;
   expiresAt: string;
@@ -20,6 +30,9 @@ interface PendingInvitation {
 interface TeamData {
   companyName: string;
   isOwner: boolean;
+  myRole: EffectiveRole;
+  canManageTeam: boolean;
+  canChangeRoles: boolean;
   members: Member[];
   pendingInvitations: PendingInvitation[];
 }
@@ -29,10 +42,12 @@ export default function TeamPanel() {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<MemberRole>("editor");
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [lastInviteUrl, setLastInviteUrl] = useState("");
   const [actionError, setActionError] = useState("");
+  const [changingRoleFor, setChangingRoleFor] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -45,6 +60,10 @@ export default function TeamPanel() {
     load();
   }, []);
 
+  // Owner can invite as Admin/Editor/Viewer; an Admin can only invite as Editor/Viewer
+  // (mirrors the server-side canAssignRole check — see lib/roles.ts).
+  const assignableForInvite: MemberRole[] = data?.isOwner ? ASSIGNABLE_ROLES : ["editor", "viewer"];
+
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     setInviting(true);
@@ -53,7 +72,7 @@ export default function TeamPanel() {
     const res = await fetch("/api/team/invite", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email, role: inviteRole }),
     });
     const result = await res.json().catch(() => ({}));
     setInviting(false);
@@ -83,6 +102,23 @@ export default function TeamPanel() {
     if (!res.ok) {
       const result = await res.json().catch(() => ({}));
       setActionError(result?.error || "Couldn't remove that teammate.");
+      return;
+    }
+    load();
+  }
+
+  async function handleRoleChange(id: string, role: MemberRole) {
+    setActionError("");
+    setChangingRoleFor(id);
+    const res = await fetch(`/api/team/members/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+    setChangingRoleFor(null);
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      setActionError(result?.error || "Couldn't change that teammate's role.");
       return;
     }
     load();
@@ -128,17 +164,27 @@ export default function TeamPanel() {
 
       {actionError && <div className="auth-error">{actionError}</div>}
 
-      {data.isOwner && (
+      {data.canManageTeam && (
         <>
-          <form className="row2" onSubmit={handleInvite} style={{ marginBottom: 14 }}>
-            <input
-              type="email"
-              placeholder="teammate@company.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button className="add-btn" type="submit" disabled={inviting} style={{ flexShrink: 0, padding: "0 18px" }}>
+          <form className="form-col" onSubmit={handleInvite} style={{ marginBottom: 14 }}>
+            <div className="row2">
+              <input
+                type="email"
+                placeholder="teammate@company.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as MemberRole)} style={{ maxWidth: 130 }}>
+                {assignableForInvite.map((r) => (
+                  <option key={r} value={r}>
+                    {ROLE_LABELS[r]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="sub" style={{ margin: 0 }}>{ROLE_DESCRIPTIONS[inviteRole]}</p>
+            <button className="add-btn" type="submit" disabled={inviting}>
               {inviting ? "Inviting…" : "Invite"}
             </button>
           </form>
@@ -159,7 +205,7 @@ export default function TeamPanel() {
         </>
       )}
 
-      {data.isOwner && data.pendingInvitations.length > 0 && (
+      {data.canManageTeam && data.pendingInvitations.length > 0 && (
         <div className="items-section">
           <div className="items-count">Pending invitations ({data.pendingInvitations.length})</div>
           <div className="items-list">
@@ -167,7 +213,10 @@ export default function TeamPanel() {
               <div className="item-row" key={inv.id}>
                 <div className="item-left">
                   <span className="dot" style={{ background: "var(--gold)" }} />
-                  <div className="item-name">{inv.email}</div>
+                  <div>
+                    <div className="item-name">{inv.email}</div>
+                    <div className="item-meta">{ROLE_LABELS[inv.role]}</div>
+                  </div>
                 </div>
                 <div className="item-right">
                   <button
@@ -190,24 +239,42 @@ export default function TeamPanel() {
       <div className="items-section">
         <div className="items-count">Members ({data.members.length})</div>
         <div className="items-list">
-          {data.members.map((m) => (
-            <div className="item-row" key={m.id}>
-              <div className="item-left">
-                <span className="dot" style={{ background: "var(--income)" }} />
-                <div>
-                  <div className="item-name">{m.email}</div>
-                  <div className="item-meta">{m.isOwner ? "Owner" : "Member"}</div>
+          {data.members.map((m) => {
+            const canRemoveThis = !m.isOwner && data.canManageTeam && canRemoveMember(data.myRole, m.role);
+            const canChangeThis = !m.isOwner && data.canChangeRoles;
+            return (
+              <div className="item-row" key={m.id}>
+                <div className="item-left">
+                  <span className="dot" style={{ background: "var(--income)" }} />
+                  <div>
+                    <div className="item-name">{m.email}</div>
+                    {!canChangeThis && <div className="item-meta">{ROLE_LABELS[m.role]}</div>}
+                  </div>
+                </div>
+                <div className="item-right">
+                  {canChangeThis && (
+                    <select
+                      value={m.role}
+                      disabled={changingRoleFor === m.id}
+                      onChange={(e) => handleRoleChange(m.id, e.target.value as MemberRole)}
+                      style={{ width: "auto", padding: "5px 8px", fontSize: 12.5 }}
+                    >
+                      {ASSIGNABLE_ROLES.map((r) => (
+                        <option key={r} value={r}>
+                          {ROLE_LABELS[r]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  {canRemoveThis && (
+                    <button className="del-btn" title="Remove" onClick={() => handleRemove(m.id)}>
+                      ✕
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="item-right">
-                {data.isOwner && !m.isOwner && (
-                  <button className="del-btn" title="Remove" onClick={() => handleRemove(m.id)}>
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

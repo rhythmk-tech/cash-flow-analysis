@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canEditData } from "@/lib/roles";
 import DashboardClient from "@/components/DashboardClient";
 import { formatDateOnly, type Frequency, type ItemType, type LineItem } from "@/lib/forecast";
 
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
+      canEdit={canEditData(session.role)}
       initialItems={mappedItems}
       initialOverrides={mappedOverrides}
       initialSettings={{

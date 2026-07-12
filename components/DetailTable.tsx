@@ -42,6 +42,7 @@ function EditableRow({
   weekHeaders,
   forecastStart,
   onEditOverride,
+  canEdit,
 }: {
   type: ItemType;
   label: string;
@@ -51,6 +52,7 @@ function EditableRow({
   weekHeaders: number[];
   forecastStart: Date;
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
+  canEdit: boolean;
 }) {
   return (
     <tr className="dt-line">
@@ -67,7 +69,9 @@ function EditableRow({
               defaultValue={value.toFixed(2)}
               key={`${label}-${w}-${value}`}
               title={isEdited ? "Manually edited" : ""}
+              readOnly={!canEdit}
               onBlur={(e) => {
+                if (!canEdit) return;
                 const v = Number(e.target.value);
                 onEditOverride(type, label, w, isNaN(v) ? 0 : v);
               }}
@@ -90,6 +94,7 @@ export default function DetailTable({
   forecastStart,
   onEditOverride,
   onForecastStartChange,
+  canEdit = true,
 }: {
   items: LineItem[];
   overrides: OverrideMap;
@@ -98,6 +103,7 @@ export default function DetailTable({
   forecastStart: Date;
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
   onForecastStartChange: (dateStr: string) => void;
+  canEdit?: boolean;
 }) {
   const weekHeaders = Array.from({ length: totalWeeks }, (_, i) => i + 1);
   const incomeLabels = getRowLabels(items, "income");
@@ -126,8 +132,10 @@ export default function DetailTable({
         </div>
       </div>
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
-        Full category breakdown from your line items — click any number to edit it. Set Week 1&apos;s
-        start date below and the rest of the weeks recalculate automatically.
+        Full category breakdown from your line items
+        {canEdit
+          ? <> — click any number to edit it. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
+          : "."}
       </span>
       <div className="table-scroll">
         <table className="detail-table">
@@ -143,7 +151,8 @@ export default function DetailTable({
                       type="date"
                       className="dt-date-input"
                       value={formatDateOnly(forecastStart)}
-                      onChange={(e) => e.target.value && onForecastStartChange(e.target.value)}
+                      readOnly={!canEdit}
+                      onChange={(e) => canEdit && e.target.value && onForecastStartChange(e.target.value)}
                     />
                   </th>
                 ) : (
@@ -188,6 +197,7 @@ export default function DetailTable({
                 weekHeaders={weekHeaders}
                 forecastStart={forecastStart}
                 onEditOverride={onEditOverride}
+                canEdit={canEdit}
               />
             ))}
             <ReadRow className="dt-total dt-income" label="TOTAL INFLOWS" values={weekly.map((w) => w.income)} />
@@ -216,6 +226,7 @@ export default function DetailTable({
                 weekHeaders={weekHeaders}
                 forecastStart={forecastStart}
                 onEditOverride={onEditOverride}
+                canEdit={canEdit}
               />
             ))}
             <ReadRow className="dt-total dt-expense" label="TOTAL OUTFLOWS" values={weekly.map((w) => w.expense)} />

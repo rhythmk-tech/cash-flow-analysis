@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { isAssignableRole } from "@/lib/roles";
 
 export async function POST(req: Request) {
   const session = await requireCompanyId();
@@ -32,8 +33,10 @@ export async function POST(req: Request) {
     );
   }
 
+  const role = isAssignableRole(invitation.role) ? invitation.role : "editor";
+
   await prisma.$transaction([
-    prisma.user.update({ where: { id: session.userId }, data: { activeCompanyId: invitation.companyId } }),
+    prisma.user.update({ where: { id: session.userId }, data: { activeCompanyId: invitation.companyId, role } }),
     prisma.invitation.update({ where: { id: invitation.id }, data: { acceptedAt: new Date() } }),
   ]);
 

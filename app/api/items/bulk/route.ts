@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canEditData } from "@/lib/roles";
 
 const ALLOWED_TYPES = ["income", "expense"];
 const ALLOWED_FREQUENCIES = ["onetime", "weekly", "biweekly", "monthly"];
@@ -8,6 +9,9 @@ const ALLOWED_FREQUENCIES = ["onetime", "weekly", "biweekly", "monthly"];
 export async function POST(req: Request) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canEditData(session.role)) {
+    return NextResponse.json({ error: "Viewers can't import items." }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const rows = body?.items;

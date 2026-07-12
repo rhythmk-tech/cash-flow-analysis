@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canEditData } from "@/lib/roles";
 
 export async function GET() {
   const session = await requireCompanyId();
@@ -16,6 +17,9 @@ export async function GET() {
 export async function POST(req: Request) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canEditData(session.role)) {
+    return NextResponse.json({ error: "Viewers can't add items." }, { status: 403 });
+  }
 
   const body = await req.json().catch(() => null);
   const { type, category, name, amount, frequency, startWeek, lineLabel } = body || {};

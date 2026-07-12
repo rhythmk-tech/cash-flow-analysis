@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canEditData } from "@/lib/roles";
 
 const ALLOWED_FREQUENCIES = ["onetime", "weekly", "biweekly", "monthly"];
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canEditData(session.role)) {
+    return NextResponse.json({ error: "Viewers can't edit items." }, { status: 403 });
+  }
 
   const { id } = await params;
   const existing = await prisma.lineItem.findUnique({ where: { id } });
@@ -58,6 +62,9 @@ export async function DELETE(
 ) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!canEditData(session.role)) {
+    return NextResponse.json({ error: "Viewers can't delete items." }, { status: 403 });
+  }
 
   const { id } = await params;
   const item = await prisma.lineItem.findUnique({ where: { id } });

@@ -28,6 +28,11 @@ model User {
   companyOwner    User?    @relation("CompanyMembers", fields: [activeCompanyId], references: [id], onDelete: SetNull)
   members         User[]   @relation("CompanyMembers")
 
+  // Only meaningful when activeCompanyId is set (i.e. this row is a team member, not an owner).
+  // "admin" | "editor" | "viewer" — see lib/roles.ts. The owner's own permissions are implicit
+  // and not stored here.
+  role String @default("editor")
+
   // Data owned by this row when it is acting as a company (activeCompanyId is null on the owner).
   items     LineItem[]
   overrides Override[]
@@ -39,6 +44,7 @@ model Invitation {
   id         String    @id @default(cuid())
   companyId  String // the User.id whose company this invite grants access to
   email      String
+  role       String    @default("editor") // "admin" | "editor" | "viewer" — copied to User.role on acceptance
   token      String    @unique
   createdAt  DateTime  @default(now())
   expiresAt  DateTime

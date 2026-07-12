@@ -8,12 +8,14 @@ export default function ItemsList({
   onEdit,
   onDelete,
   forecastStart,
+  canEdit = true,
 }: {
   items: LineItem[];
   editingItemId?: string | null;
   onEdit: (item: LineItem) => void;
   onDelete: (id: string) => void;
   forecastStart: Date;
+  canEdit?: boolean;
 }) {
   return (
     <div className="items-section">
@@ -57,12 +59,16 @@ export default function ItemsList({
                   {item.type === "income" ? "+" : "-"}
                   {money(item.amount).replace("-", "")}
                 </span>
-                <button className="del-btn" title="Edit" onClick={() => onEdit(item)}>
-                  ✎
-                </button>
-                <button className="del-btn" title="Remove" onClick={() => onDelete(item.id)}>
-                  ✕
-                </button>
+                {canEdit && (
+                  <>
+                    <button className="del-btn" title="Edit" onClick={() => onEdit(item)}>
+                      ✎
+                    </button>
+                    <button className="del-btn" title="Remove" onClick={() => onDelete(item.id)}>
+                      ✕
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))
