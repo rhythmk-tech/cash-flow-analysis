@@ -290,7 +290,7 @@ export default function DashboardClient({
                 forecastStart={forecastStart}
               />
             </div>
-            <ImportPanel onImported={handleImported} autoOpen={isEmpty} />
+            <ImportPanel onImported={handleImported} autoOpen={isEmpty} forecastStart={forecastStart} />
           </div>
 
           <div className="main-col">
