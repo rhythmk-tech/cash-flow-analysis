@@ -1,4 +1,8 @@
-import { COLORS, ScenarioPoint } from "@/lib/forecast";
+"use client";
+
+import { useState } from "react";
+import { COLORS, ScenarioPoint, money } from "@/lib/forecast";
+import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
@@ -12,6 +16,7 @@ export default function ScenarioChart({
   base: ScenarioPoint[];
   bull: ScenarioPoint[];
 }) {
+  const [active, setActive] = useState<number | null>(null);
   const allVals = [...bear, ...base, ...bull].map((w) => w.balance);
   const maxV = Math.max(...allVals, 0);
   const minV = Math.min(...allVals, 0);
@@ -66,12 +71,47 @@ export default function ScenarioChart({
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+      {active !== null && (
+        <>
+          <circle cx={xFor(active)} cy={yFor(bear[active].balance)} r={4} fill={COLORS.expense} stroke="white" strokeWidth={1.5} />
+          <circle cx={xFor(active)} cy={yFor(base[active].balance)} r={4} fill={COLORS.ink} stroke="white" strokeWidth={1.5} />
+          <circle cx={xFor(active)} cy={yFor(bull[active].balance)} r={4} fill={COLORS.income} stroke="white" strokeWidth={1.5} />
+        </>
+      )}
       {base.map((w, i) =>
         i % step === 0 ? (
           <text key={w.week} x={xFor(i)} y={H - 6} fontSize={10} fill={COLORS.inkMuted} textAnchor="middle">
             W{w.week}
           </text>
         ) : null
+      )}
+      {base.map((w, i) => (
+        <rect
+          key={`hit-${w.week}`}
+          x={padL + i * bw}
+          y={padT}
+          width={bw}
+          height={plotH}
+          fill="transparent"
+          style={{ cursor: "pointer" }}
+          onMouseEnter={() => setActive(i)}
+          onMouseLeave={() => setActive((cur) => (cur === i ? null : cur))}
+          onClick={() => setActive((cur) => (cur === i ? null : i))}
+        />
+      ))}
+      {active !== null && (
+        <ChartTooltip
+          x={xFor(active)}
+          y={yFor(base[active].balance)}
+          lines={[
+            `Week ${base[active].week}`,
+            `Bear: ${money(bear[active].balance)}`,
+            `Base: ${money(base[active].balance)}`,
+            `Bull: ${money(bull[active].balance)}`,
+          ]}
+          viewW={W}
+          viewH={H}
+        />
       )}
     </svg>
   );

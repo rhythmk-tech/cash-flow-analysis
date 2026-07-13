@@ -1,9 +1,14 @@
-import { COLORS, WeekRow } from "@/lib/forecast";
+"use client";
+
+import { useState } from "react";
+import { COLORS, WeekRow, money } from "@/lib/forecast";
+import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
 
 export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
+  const [active, setActive] = useState<number | null>(null);
   const balances = weekly.map((w) => w.balance);
   const maxBal = Math.max(...balances, 0);
   const minBal = Math.min(...balances, 0);
@@ -54,7 +59,15 @@ export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
         strokeLinejoin="round"
       />
       {weekly.map((w, i) => (
-        <circle key={w.week} cx={xFor(i)} cy={yFor(w.balance)} r={4} fill={COLORS.ink} stroke="white" strokeWidth={1.5} />
+        <circle
+          key={w.week}
+          cx={xFor(i)}
+          cy={yFor(w.balance)}
+          r={active === i ? 6 : 4}
+          fill={COLORS.ink}
+          stroke="white"
+          strokeWidth={1.5}
+        />
       ))}
       {weekly.map((w, i) =>
         i % step === 0 ? (
@@ -62,6 +75,28 @@ export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
             W{w.week}
           </text>
         ) : null
+      )}
+      {weekly.map((w, i) => (
+        <circle
+          key={`hit-${w.week}`}
+          cx={xFor(i)}
+          cy={yFor(w.balance)}
+          r={12}
+          fill="transparent"
+          style={{ cursor: "pointer" }}
+          onMouseEnter={() => setActive(i)}
+          onMouseLeave={() => setActive((cur) => (cur === i ? null : cur))}
+          onClick={() => setActive((cur) => (cur === i ? null : i))}
+        />
+      ))}
+      {active !== null && (
+        <ChartTooltip
+          x={xFor(active)}
+          y={yFor(weekly[active].balance)}
+          lines={[`Week ${weekly[active].week}`, `Balance: ${money(weekly[active].balance)}`]}
+          viewW={W}
+          viewH={H}
+        />
       )}
     </svg>
   );

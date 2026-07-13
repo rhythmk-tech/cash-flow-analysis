@@ -23,7 +23,7 @@ export default function ImportPanel({
   const [submitError, setSubmitError] = useState("");
   const [importedCount, setImportedCount] = useState(0);
 
-  function downloadTemplate() {
+  function downloadCsvTemplate() {
     const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -31,6 +31,13 @@ export default function ImportPanel({
     a.download = "cashflow-import-template.csv";
     a.click();
     URL.revokeObjectURL(url);
+  }
+
+  function downloadExcelTemplate() {
+    const a = document.createElement("a");
+    a.href = `/api/items/template?forecastStart=${encodeURIComponent(formatDateOnly(forecastStart))}`;
+    a.download = "cash-flow-starter-template.xlsx";
+    a.click();
   }
 
   async function handleFile(file: File) {
@@ -98,17 +105,26 @@ export default function ImportPanel({
   return (
     <details className="card import-panel" open={autoOpen}>
       <summary className="import-summary">Bulk import from a file</summary>
-      <p className="sub" style={{ margin: "8px 0 12px" }}>
-        Upload a CSV, TSV, Excel (.xlsx/.xls), JSON, or PDF file of your income and expenses to
-        populate the forecast in one go. Column names are flexible — <code>Description</code>,
+      <p className="sub" style={{ margin: "8px 0 4px" }}>
+        Don&apos;t have anything to upload yet? Download a starter template, fill in your real
+        income and expenses, then upload it back here.
+      </p>
+      <div style={{ display: "flex", gap: 14, margin: "6px 0 12px" }}>
+        <button type="button" className="link-btn" onClick={downloadExcelTemplate}>
+          ⬇ Download Excel template
+        </button>
+        <button type="button" className="link-btn" onClick={downloadCsvTemplate}>
+          ⬇ Download CSV template
+        </button>
+      </div>
+      <p className="sub" style={{ margin: "0 0 12px" }}>
+        Already have your numbers somewhere else? Upload a CSV, TSV, Excel (.xlsx/.xls), JSON, or
+        PDF file directly. Column names are flexible — <code>Description</code>,{" "}
         <code>Memo</code>, or <code>Payee</code> all work for a line item&apos;s name, for example —
         and a single <code>Amount</code> column with negative values for expenses works just as
         well as separate <code>Debit</code>/<code>Credit</code> columns.
       </p>
       <div className="form-col">
-        <button type="button" className="link-btn" onClick={downloadTemplate}>
-          ⬇ Download CSV template
-        </button>
         <input
           ref={fileInputRef}
           type="file"

@@ -1,9 +1,14 @@
-import { COLORS, WeekRow } from "@/lib/forecast";
+"use client";
+
+import { useState } from "react";
+import { COLORS, WeekRow, money } from "@/lib/forecast";
+import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
 
 export default function FlowChart({ weekly }: { weekly: WeekRow[] }) {
+  const [active, setActive] = useState<number | null>(null);
   const maxVal = Math.max(...weekly.map((w) => Math.max(w.income, w.expense)), 1);
   const yFor = (v: number) => padT + plotH - (v / maxVal) * plotH;
   const n = weekly.length || 1;
@@ -32,8 +37,9 @@ export default function FlowChart({ weekly }: { weekly: WeekRow[] }) {
         const xIn = groupX + bw * 0.15;
         const xOut = xIn + barW + gap;
         const yIn = yFor(w.income), yOut = yFor(w.expense);
+        const isActive = active === i;
         return (
-          <g key={w.week}>
+          <g key={w.week} opacity={isActive ? 1 : 0.9}>
             <rect x={xIn} y={yIn} width={barW} height={padT + plotH - yIn} fill={COLORS.income} rx={2} />
             <rect x={xOut} y={yOut} width={barW} height={padT + plotH - yOut} fill={COLORS.expense} rx={2} />
           </g>
@@ -45,6 +51,33 @@ export default function FlowChart({ weekly }: { weekly: WeekRow[] }) {
             W{w.week}
           </text>
         ) : null
+      )}
+      {weekly.map((w, i) => (
+        <rect
+          key={`hit-${w.week}`}
+          x={padL + i * bw}
+          y={padT}
+          width={bw}
+          height={plotH}
+          fill="transparent"
+          style={{ cursor: "pointer" }}
+          onMouseEnter={() => setActive(i)}
+          onMouseLeave={() => setActive((cur) => (cur === i ? null : cur))}
+          onClick={() => setActive((cur) => (cur === i ? null : i))}
+        />
+      ))}
+      {active !== null && (
+        <ChartTooltip
+          x={padL + active * bw + bw / 2}
+          y={yFor(Math.max(weekly[active].income, weekly[active].expense))}
+          lines={[
+            `Week ${weekly[active].week}`,
+            `Inflows: ${money(weekly[active].income)}`,
+            `Outflows: ${money(weekly[active].expense)}`,
+          ]}
+          viewW={W}
+          viewH={H}
+        />
       )}
     </svg>
   );

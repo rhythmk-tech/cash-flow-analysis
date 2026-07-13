@@ -18,6 +18,7 @@ import {
   computeScenario,
   computeTips,
   computeWeekly,
+  formatDateOnly,
   money,
   overrideKey,
   parseDateOnly,
@@ -312,7 +313,7 @@ export default function DashboardClient({
                   one income or expense item.
                 </span>
                 {canEdit ? (
-                  <div className="onboarding-steps">
+                  <div className="onboarding-steps onboarding-steps-3">
                     <div className="onboarding-step">
                       <h3>➕ Add items one at a time</h3>
                       <p>
@@ -322,11 +323,27 @@ export default function DashboardClient({
                       </p>
                     </div>
                     <div className="onboarding-step">
+                      <h3>📝 Start from a template</h3>
+                      <p>
+                        Don&apos;t have anything to upload yet? Download a starter spreadsheet with
+                        the exact columns the forecast needs, fill in your real numbers, and upload
+                        it back.
+                      </p>
+                      <a
+                        className="link-btn"
+                        style={{ marginTop: 6, display: "inline-block" }}
+                        href={`/api/items/template?forecastStart=${encodeURIComponent(formatDateOnly(forecastStart))}`}
+                        download="cash-flow-starter-template.xlsx"
+                      >
+                        ⬇ Download Excel template
+                      </a>
+                    </div>
+                    <div className="onboarding-step">
                       <h3>📄 Import a file in bulk</h3>
                       <p>
-                        Already have your income and expenses in a spreadsheet? Open &quot;Bulk
-                        import&quot; on the left, download the template, and upload your own file
-                        to populate everything at once.
+                        Already have your income and expenses in a spreadsheet, bank export, or
+                        PDF? Open &quot;Bulk import&quot; on the left and upload it directly to
+                        populate everything at once.
                       </p>
                     </div>
                   </div>
@@ -511,8 +528,10 @@ export default function DashboardClient({
                   weekly={weekly}
                   totalWeeks={settings.totalWeeks}
                   forecastStart={forecastStart}
+                  startingBalance={settings.startingBalance}
                   onEditOverride={handleEditOverride}
                   onForecastStartChange={handleForecastStartChange}
+                  onStartingBalanceChange={(v) => saveSettingsDebounced({ startingBalance: v })}
                   canEdit={canEdit}
                 />
               </div>

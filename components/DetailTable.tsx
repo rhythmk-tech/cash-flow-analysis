@@ -33,6 +33,51 @@ function ReadRow({
   );
 }
 
+function OpeningBalanceRow({
+  weekHeaders,
+  values,
+  startingBalance,
+  onStartingBalanceChange,
+  canEdit,
+}: {
+  weekHeaders: number[];
+  values: number[];
+  startingBalance: number;
+  onStartingBalanceChange: (value: number) => void;
+  canEdit: boolean;
+}) {
+  return (
+    <tr className="dt-line">
+      <td>Total Opening Balance</td>
+      {weekHeaders.map((w, i) =>
+        w === 1 ? (
+          <td key={w}>
+            <input
+              className="dt-input"
+              type="number"
+              step="0.01"
+              defaultValue={startingBalance.toFixed(2)}
+              key={`opening-${startingBalance}`}
+              readOnly={!canEdit}
+              title={canEdit ? "Same value as the Starting balance setting" : ""}
+              onBlur={(e) => {
+                if (!canEdit) return;
+                const v = Number(e.target.value);
+                onStartingBalanceChange(isNaN(v) ? 0 : v);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              }}
+            />
+          </td>
+        ) : (
+          <td key={w}>{money(values[i])}</td>
+        )
+      )}
+    </tr>
+  );
+}
+
 function EditableRow({
   type,
   label,
@@ -92,8 +137,10 @@ export default function DetailTable({
   weekly,
   totalWeeks,
   forecastStart,
+  startingBalance,
   onEditOverride,
   onForecastStartChange,
+  onStartingBalanceChange,
   canEdit = true,
 }: {
   items: LineItem[];
@@ -101,8 +148,10 @@ export default function DetailTable({
   weekly: WeekRow[];
   totalWeeks: number;
   forecastStart: Date;
+  startingBalance: number;
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
   onForecastStartChange: (dateStr: string) => void;
+  onStartingBalanceChange: (value: number) => void;
   canEdit?: boolean;
 }) {
   const weekHeaders = Array.from({ length: totalWeeks }, (_, i) => i + 1);
@@ -134,7 +183,7 @@ export default function DetailTable({
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
         Full category breakdown from your line items
         {canEdit
-          ? <> — click any number to edit it. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
+          ? <> — click any line-item number or the Week 1 opening balance to edit it. Totals, net cash flow, and closing balance stay as computed sums so they always match your charts. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
           : "."}
       </span>
       <div className="table-scroll">
@@ -171,7 +220,13 @@ export default function DetailTable({
             <tr className="dt-section-title">
               <td colSpan={totalWeeks + 1}>OPENING CASH BALANCE</td>
             </tr>
-            <ReadRow className="dt-line" label="Total Opening Balance" values={weekly.map((w) => w.balance - w.net)} />
+            <OpeningBalanceRow
+              weekHeaders={weekHeaders}
+              values={weekly.map((w) => w.balance - w.net)}
+              startingBalance={startingBalance}
+              onStartingBalanceChange={onStartingBalanceChange}
+              canEdit={canEdit}
+            />
 
             <tr className="dt-spacer">
               <td colSpan={totalWeeks + 1} />

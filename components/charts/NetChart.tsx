@@ -1,9 +1,14 @@
-import { COLORS, WeekRow } from "@/lib/forecast";
+"use client";
+
+import { useState } from "react";
+import { COLORS, WeekRow, money } from "@/lib/forecast";
+import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
 
 export default function NetChart({ weekly }: { weekly: WeekRow[] }) {
+  const [active, setActive] = useState<number | null>(null);
   const balances = weekly.map((w) => w.balance);
   const maxBal = Math.max(...balances, 0);
   const minBal = Math.min(...balances, 0);
@@ -37,7 +42,18 @@ export default function NetChart({ weekly }: { weekly: WeekRow[] }) {
         const y0 = yFor(0), y1 = yFor(w.net);
         const top = Math.min(y0, y1), h = Math.max(Math.abs(y1 - y0), 1);
         const color = w.net >= 0 ? COLORS.income : COLORS.expense;
-        return <rect key={w.week} x={x} y={top} width={barW} height={h} fill={color} opacity={0.55} rx={3} />;
+        return (
+          <rect
+            key={w.week}
+            x={x}
+            y={top}
+            width={barW}
+            height={h}
+            fill={color}
+            opacity={active === i ? 0.85 : 0.55}
+            rx={3}
+          />
+        );
       })}
       <line x1={padL} y1={zeroY} x2={W - padR} y2={zeroY} stroke={COLORS.expense} strokeWidth={1} strokeDasharray="3 3" />
       <polyline
@@ -49,7 +65,7 @@ export default function NetChart({ weekly }: { weekly: WeekRow[] }) {
         strokeLinejoin="round"
       />
       {weekly.map((w, i) => (
-        <circle key={w.week} cx={padL + i * bw + bw / 2} cy={yFor(w.balance)} r={2.5} fill={COLORS.ink} />
+        <circle key={w.week} cx={padL + i * bw + bw / 2} cy={yFor(w.balance)} r={active === i ? 4.5 : 2.5} fill={COLORS.ink} />
       ))}
       {weekly.map((w, i) =>
         i % step === 0 ? (
@@ -57,6 +73,33 @@ export default function NetChart({ weekly }: { weekly: WeekRow[] }) {
             W{w.week}
           </text>
         ) : null
+      )}
+      {weekly.map((w, i) => (
+        <rect
+          key={`hit-${w.week}`}
+          x={padL + i * bw}
+          y={padT}
+          width={bw}
+          height={plotH}
+          fill="transparent"
+          style={{ cursor: "pointer" }}
+          onMouseEnter={() => setActive(i)}
+          onMouseLeave={() => setActive((cur) => (cur === i ? null : cur))}
+          onClick={() => setActive((cur) => (cur === i ? null : i))}
+        />
+      ))}
+      {active !== null && (
+        <ChartTooltip
+          x={padL + active * bw + bw / 2}
+          y={yFor(weekly[active].balance)}
+          lines={[
+            `Week ${weekly[active].week}`,
+            `Balance: ${money(weekly[active].balance)}`,
+            `Net: ${weekly[active].net >= 0 ? "+" : ""}${money(weekly[active].net)}`,
+          ]}
+          viewW={W}
+          viewH={H}
+        />
       )}
     </svg>
   );
