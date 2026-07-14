@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   // exceljs and pdfjs-dist do dynamic requires / worker & font-data loading that doesn't
@@ -6,4 +7,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["exceljs", "pdfjs-dist"],
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // No org/project/authToken set — source map upload is skipped until those are configured.
+  silent: true,
+});
