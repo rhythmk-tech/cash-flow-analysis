@@ -8,10 +8,7 @@ import {
   Frequency,
   ItemType,
   LineItem,
-  dateForWeek,
   formatDateOnly,
-  parseDateOnly,
-  weekNumberForDate,
 } from "@/lib/forecast";
 
 const NEW_CATEGORY_VALUE = "__new__";
@@ -22,7 +19,7 @@ export interface NewItemPayload {
   name: string;
   amount: number;
   frequency: Frequency;
-  startWeek: number;
+  startDate: string;
   lineLabel: string;
 }
 
@@ -57,9 +54,9 @@ export default function AddItemForm({
     setCategory(editingItem.category);
     setNewCategory("");
     setAmount(String(editingItem.amount));
-    setStartDate(formatDateOnly(dateForWeek(editingItem.startWeek, forecastStart)));
+    setStartDate(editingItem.startDate);
     setFrequency(editingItem.frequency);
-  }, [editingItem, forecastStart]);
+  }, [editingItem]);
 
   const categories = useMemo(() => {
     const base = formType === "expense" ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -86,15 +83,13 @@ export default function AddItemForm({
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0 || !finalCategory || !startDate) return;
 
-    const startWeek = Math.max(1, weekNumberForDate(parseDateOnly(startDate), forecastStart));
-
     const payload: NewItemPayload = {
       type: formType,
       category: finalCategory,
       name: finalCategory,
       amount: amt,
       frequency,
-      startWeek,
+      startDate,
       lineLabel: finalCategory,
     };
 

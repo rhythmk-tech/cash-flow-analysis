@@ -2,8 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
 import { canEditData } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
+import { checkAndSendNegativeBalanceAlert } from "@/lib/alerts";
+import { formatDateOnly, parseDateOnly } from "@/lib/forecast";
 
 const ALLOWED_FREQUENCIES = ["onetime", "weekly", "biweekly", "monthly"];
+
+function serializeItem<T extends { startDate: Date }>(item: T) {
+  return { ...item, startDate: formatDateOnly(item.startDate) };
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireCompanyId();
@@ -19,8 +26,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const body = await req.json().catch(() => null);
-  const { name, category, amount, frequency, startWeek, lineLabel } = body || {};
-  const data: Record<string, string | number> = {};
+  const { name, category, amount, frequency, startDate, lineLabel } = body || {};
+  const data: Record<string, string | number | Date> = {};
 
   if (name !== undefined) {
     if (!name || typeof name !== "string") {
@@ -48,16 +55,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     data.frequency = frequency;
   }
-  if (startWeek !== undefined) {
-    data.startWeek = Math.max(1, Number(startWeek) || 1);
+  if (startDate !== undefined) {
+    const parsed = parseDateOnly(String(startDate));
+    if (Number.isNaN(parsed.getTime())) {
+      return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
+    }
+    data.startDate = parsed;
   }
 
   const item = await prisma.lineItem.update({ where: { id }, data });
-  return NextResponse.json(item);
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "item.update",
+    `Edited "${existing.name}"`
+  );
+  await checkAndSendNegativeBalanceAlert(session.companyId, new URL(req.url).origin);
+
+  return NextResponse.json(serializeItem(item));
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await requireCompanyId();
@@ -73,5 +94,15 @@ export async function DELETE(
   }
 
   await prisma.lineItem.delete({ where: { id } });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "item.delete",
+    `Removed "${item.name}"`
+  );
+  await checkAndSendNegativeBalanceAlert(session.companyId, new URL(req.url).origin);
+
   return NextResponse.json({ ok: true });
 }

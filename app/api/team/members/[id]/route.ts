@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
-import { canAssignRole, canChangeRoles, canManageTeam, canRemoveMember, isAssignableRole } from "@/lib/roles";
+import { canAssignRole, canChangeRoles, canManageTeam, canRemoveMember, isAssignableRole, ROLE_LABELS } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireCompanyId();
@@ -30,6 +31,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   await prisma.user.update({ where: { id }, data: { role } });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "member.role_changed",
+    `Changed ${member.email}'s role to ${ROLE_LABELS[role]}`
+  );
+
   return NextResponse.json({ ok: true, role });
 }
 
@@ -55,5 +65,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   await prisma.user.update({ where: { id }, data: { activeCompanyId: null, role: "editor" } });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "member.removed",
+    `Removed ${member.email} from the team`
+  );
+
   return NextResponse.json({ ok: true });
 }

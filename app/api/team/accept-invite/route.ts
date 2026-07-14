@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
-import { isAssignableRole } from "@/lib/roles";
+import { isAssignableRole, ROLE_LABELS } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
 
 export async function POST(req: Request) {
   const session = await requireCompanyId();
@@ -44,6 +45,14 @@ export async function POST(req: Request) {
     where: { id: invitation.companyId },
     select: { companyName: true },
   });
+
+  await logActivity(
+    invitation.companyId,
+    session.userId,
+    session.userEmail,
+    "member.joined",
+    `${session.userEmail} joined as ${ROLE_LABELS[role]}`
+  );
 
   return NextResponse.json({ ok: true, companyName: company?.companyName ?? "" });
 }

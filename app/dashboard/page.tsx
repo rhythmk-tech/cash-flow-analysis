@@ -10,7 +10,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/login");
   const { companyId } = session;
 
-  const [user, items, overrides] = await Promise.all([
+  const [user, items, overrides, actuals] = await Promise.all([
     prisma.user.findUnique({
       where: { id: companyId },
       select: {
@@ -24,6 +24,7 @@ export default async function DashboardPage() {
     }),
     prisma.lineItem.findMany({ where: { userId: companyId }, orderBy: { createdAt: "asc" } }),
     prisma.override.findMany({ where: { userId: companyId } }),
+    prisma.actual.findMany({ where: { userId: companyId } }),
   ]);
 
   if (!user) redirect("/login");
@@ -35,7 +36,7 @@ export default async function DashboardPage() {
     name: it.name,
     amount: it.amount,
     frequency: it.frequency as Frequency,
-    startWeek: it.startWeek,
+    startDate: formatDateOnly(it.startDate),
     lineLabel: it.lineLabel,
   }));
 
@@ -46,11 +47,14 @@ export default async function DashboardPage() {
     value: o.value,
   }));
 
+  const mappedActuals = actuals.map((a) => ({ week: a.week, balance: a.balance }));
+
   return (
     <DashboardClient
       canEdit={canEditData(session.role)}
       initialItems={mappedItems}
       initialOverrides={mappedOverrides}
+      initialActuals={mappedActuals}
       initialSettings={{
         companyName: user.companyName,
         startingBalance: user.startingBalance,

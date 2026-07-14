@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
 import { canEditData } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
+import { money } from "@/lib/forecast";
+import { checkAndSendNegativeBalanceAlert } from "@/lib/alerts";
 
 export async function GET() {
   const session = await requireCompanyId();
@@ -48,5 +51,15 @@ export async function PUT(req: Request) {
     create: { userId: session.companyId, type, label, week: weekNum, value: val },
     update: { value: val },
   });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "override.edit",
+    `Set "${label}" for Week ${weekNum} to ${money(val)}`
+  );
+  await checkAndSendNegativeBalanceAlert(session.companyId, new URL(req.url).origin);
+
   return NextResponse.json(override);
 }

@@ -8,6 +8,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [resetUrl, setResetUrl] = useState("");
+  const [emailSent, setEmailSent] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -20,6 +21,7 @@ export default function ForgotPasswordPage() {
     const data = await res.json().catch(() => ({}));
     setLoading(false);
     setSubmitted(true);
+    setEmailSent(Boolean(data?.emailSent));
     if (data?.resetUrl) setResetUrl(data.resetUrl);
   }
 
@@ -46,6 +48,11 @@ export default function ForgotPasswordPage() {
               {loading ? "Sending…" : "Send reset link"}
             </button>
           </form>
+        ) : emailSent ? (
+          <div className="tip success" style={{ display: "block" }}>
+            <p style={{ fontWeight: 600 }}>Check your email</p>
+            <p>If an account exists for that email, a reset link is on its way.</p>
+          </div>
         ) : (
           <div className="tip insight" style={{ display: "block" }}>
             <p style={{ fontWeight: 600, marginBottom: 6 }}>
@@ -54,8 +61,7 @@ export default function ForgotPasswordPage() {
             {resetUrl ? (
               <>
                 <p style={{ marginBottom: 6 }}>
-                  No email provider is configured on this app yet, so the link is shown here
-                  directly instead of being emailed:
+                  We couldn&apos;t email it right now, so here&apos;s the link directly:
                 </p>
                 <code style={{ fontSize: 11.5, wordBreak: "break-all" }}>{resetUrl}</code>
               </>

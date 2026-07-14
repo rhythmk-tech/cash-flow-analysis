@@ -6,6 +6,7 @@ import AddItemForm, { NewItemPayload } from "./AddItemForm";
 import ItemsList from "./ItemsList";
 import ImportPanel from "./ImportPanel";
 import DetailTable from "./DetailTable";
+import WeeklyLedger from "./WeeklyLedger";
 import TeamPanel from "./TeamPanel";
 import TrajectoryChart from "./charts/TrajectoryChart";
 import NetChart from "./charts/NetChart";
@@ -23,13 +24,17 @@ import {
   overrideKey,
   parseDateOnly,
 } from "@/lib/forecast";
-import { downloadCsv, weeklyLedgerToCsv } from "@/lib/export";
 
 interface OverrideRecord {
   type: ItemType;
   label: string;
   week: number;
   value: number;
+}
+
+interface ActualRecord {
+  week: number;
+  balance: number;
 }
 
 interface Settings {
@@ -55,16 +60,19 @@ function companyInitials(name: string): string {
 export default function DashboardClient({
   initialItems,
   initialOverrides,
+  initialActuals,
   initialSettings,
   canEdit,
 }: {
   initialItems: LineItem[];
   initialOverrides: OverrideRecord[];
+  initialActuals: ActualRecord[];
   initialSettings: Settings;
   canEdit: boolean;
 }) {
   const [items, setItems] = useState<LineItem[]>(initialItems);
   const [overridesArr, setOverridesArr] = useState<OverrideRecord[]>(initialOverrides);
+  const [actualsArr, setActualsArr] = useState<ActualRecord[]>(initialActuals);
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -78,6 +86,14 @@ export default function DashboardClient({
     });
     return map;
   }, [overridesArr]);
+
+  const actualsMap: Record<number, number> = useMemo(() => {
+    const map: Record<number, number> = {};
+    actualsArr.forEach((a) => {
+      map[a.week] = a.balance;
+    });
+    return map;
+  }, [actualsArr]);
 
   const weekly = useMemo(
     () => computeWeekly(items, overridesMap, settings.startingBalance, settings.totalWeeks, forecastStart),
@@ -156,6 +172,23 @@ export default function DashboardClient({
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ type, label, week, value }),
+    });
+  }
+
+  async function handleEditActual(week: number, balance: number) {
+    setActualsArr((prev) => {
+      const idx = prev.findIndex((a) => a.week === week);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = { ...copy[idx], balance };
+        return copy;
+      }
+      return [...prev, { week, balance }];
+    });
+    await fetch("/api/actuals", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ week, balance }),
     });
   }
 
@@ -294,7 +327,6 @@ export default function DashboardClient({
                 editingItemId={editingItemId}
                 onEdit={(item) => setEditingItemId(item.id)}
                 onDelete={handleDeleteItem}
-                forecastStart={forecastStart}
                 canEdit={canEdit}
               />
             </div>
@@ -459,64 +491,14 @@ export default function DashboardClient({
 
             {activeTab === "ledger" && (
               <div className="tab-panel active">
-                <div className="card">
-                  <div className="card-head">
-                    <h2>Weekly ledger</h2>
-                    <div style={{ display: "flex", gap: 12 }}>
-                      <button
-                        type="button"
-                        className="link-btn"
-                        onClick={() => downloadCsv(`${settings.companyName}-weekly-ledger.csv`, weeklyLedgerToCsv(weekly))}
-                      >
-                        ⬇ Export CSV
-                      </button>
-                      <button type="button" className="link-btn" onClick={() => window.print()}>
-                        🖨 Print / PDF
-                      </button>
-                    </div>
-                  </div>
-                  <div className="table-scroll">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th>Week</th>
-                          <th>Income</th>
-                          <th>Expenses</th>
-                          <th>Net</th>
-                          <th>Balance</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {weekly.map((w) => (
-                          <tr key={w.week}>
-                            <td className="mono" style={{ color: "var(--inkMuted)" }}>
-                              W{w.week}
-                            </td>
-                            <td className="mono" style={{ color: "var(--income)" }}>
-                              {w.income > 0 ? "+" + money(w.income) : "—"}
-                            </td>
-                            <td className="mono" style={{ color: "var(--expense)" }}>
-                              {w.expense > 0 ? "-" + money(w.expense) : "—"}
-                            </td>
-                            <td
-                              className="mono"
-                              style={{ fontWeight: 600, color: w.net >= 0 ? "var(--income)" : "var(--expense)" }}
-                            >
-                              {w.net >= 0 ? "+" : ""}
-                              {money(w.net)}
-                            </td>
-                            <td
-                              className="mono"
-                              style={{ fontWeight: 700, color: w.balance < 0 ? "var(--expense)" : "var(--ink)" }}
-                            >
-                              {money(w.balance)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <WeeklyLedger
+                  weekly={weekly}
+                  actuals={actualsMap}
+                  forecastStart={forecastStart}
+                  companyName={settings.companyName}
+                  canEdit={canEdit}
+                  onEditActual={handleEditActual}
+                />
               </div>
             )}
 

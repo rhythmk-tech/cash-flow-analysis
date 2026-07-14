@@ -4,6 +4,7 @@ import { EffectiveRole, isAssignableRole } from "@/lib/roles";
 
 export interface SessionCompany {
   userId: string;
+  userEmail: string;
   companyId: string;
   isOwner: boolean;
   role: EffectiveRole;
@@ -23,7 +24,7 @@ export async function requireCompanyId(): Promise<SessionCompany | null> {
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { activeCompanyId: true, role: true },
+    select: { email: true, activeCompanyId: true, role: true },
   });
   if (!user) return null;
 
@@ -31,5 +32,5 @@ export async function requireCompanyId(): Promise<SessionCompany | null> {
   const companyId = user.activeCompanyId ?? userId;
   const role: EffectiveRole = isOwner ? "owner" : isAssignableRole(user.role) ? user.role : "editor";
 
-  return { userId, companyId, isOwner, role };
+  return { userId, userEmail: user.email, companyId, isOwner, role };
 }

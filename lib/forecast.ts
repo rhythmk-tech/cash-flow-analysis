@@ -8,7 +8,7 @@ export interface LineItem {
   name: string;
   amount: number;
   frequency: Frequency;
-  startWeek: number;
+  startDate: string; // "YYYY-MM-DD", absolute — see parseDateOnly/formatDateOnly
   lineLabel: string;
 }
 
@@ -69,14 +69,14 @@ export function overrideKey(type: ItemType, label: string, week: number): string
 // forecast's week-index grid and real dates.
 export function occurrencesFor(item: LineItem, totalWeeks: number, forecastStart: Date): number[] {
   const weeks: number[] = [];
-  const start = Math.max(1, item.startWeek || 1);
+  const itemDate = parseDateOnly(item.startDate);
+  const start = Math.max(1, weekNumberForDate(itemDate, forecastStart));
   if (item.frequency === "onetime") {
     if (start <= totalWeeks) weeks.push(start);
     return weeks;
   }
   if (item.frequency === "monthly") {
-    const startDate = dateForWeek(start, forecastStart);
-    let cursor = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    let cursor = new Date(itemDate.getFullYear(), itemDate.getMonth(), 1);
     for (let i = 0; i < 36; i++) {
       const wk = weekNumberForDate(cursor, forecastStart);
       if (wk > totalWeeks) break;
@@ -219,7 +219,7 @@ export function dateForWeek(weekNum: number, forecastStart: Date): Date {
 }
 
 // Raw (unclamped) week index for a date — can be <1 for dates before forecastStart.
-// Callers that need a valid startWeek should clamp with Math.max(1, ...) themselves.
+// Callers that need a valid in-range week should clamp with Math.max(1, ...) themselves.
 export function weekNumberForDate(date: Date, forecastStart: Date): number {
   const diffDays = Math.round((date.getTime() - forecastStart.getTime()) / 86400000);
   return Math.floor(diffDays / 7) + 1;

@@ -37,6 +37,25 @@ interface TeamData {
   pendingInvitations: PendingInvitation[];
 }
 
+interface ActivityEntry {
+  id: string;
+  actorEmail: string;
+  summary: string;
+  createdAt: string;
+}
+
+function relativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
 export default function TeamPanel() {
   const router = useRouter();
   const [data, setData] = useState<TeamData | null>(null);
@@ -46,8 +65,12 @@ export default function TeamPanel() {
   const [inviting, setInviting] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [lastInviteUrl, setLastInviteUrl] = useState("");
+  const [lastInviteEmailSent, setLastInviteEmailSent] = useState(false);
+  const [lastInviteEmail, setLastInviteEmail] = useState("");
   const [actionError, setActionError] = useState("");
   const [changingRoleFor, setChangingRoleFor] = useState<string | null>(null);
+  const [activity, setActivity] = useState<ActivityEntry[] | null>(null);
+  const [loadingActivity, setLoadingActivity] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -56,9 +79,20 @@ export default function TeamPanel() {
     setLoading(false);
   }
 
+  async function loadActivity() {
+    setLoadingActivity(true);
+    const res = await fetch("/api/team/activity");
+    if (res.ok) setActivity((await res.json()).entries);
+    setLoadingActivity(false);
+  }
+
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (data?.canManageTeam) loadActivity();
+  }, [data?.canManageTeam]);
 
   // Owner can invite as Admin/Editor/Viewer; an Admin can only invite as Editor/Viewer
   // (mirrors the server-side canAssignRole check — see lib/roles.ts).
@@ -80,9 +114,12 @@ export default function TeamPanel() {
       setInviteError(result?.error || "Couldn't send that invite.");
       return;
     }
+    setLastInviteEmail(email);
     setEmail("");
     setLastInviteUrl(result.inviteUrl);
+    setLastInviteEmailSent(Boolean(result.emailSent));
     load();
+    loadActivity();
   }
 
   async function handleRevoke(id: string) {
@@ -94,6 +131,7 @@ export default function TeamPanel() {
       return;
     }
     load();
+    loadActivity();
   }
 
   async function handleRemove(id: string) {
@@ -105,6 +143,7 @@ export default function TeamPanel() {
       return;
     }
     load();
+    loadActivity();
   }
 
   async function handleRoleChange(id: string, role: MemberRole) {
@@ -122,6 +161,7 @@ export default function TeamPanel() {
       return;
     }
     load();
+    loadActivity();
   }
 
   async function handleLeave() {
@@ -189,10 +229,15 @@ export default function TeamPanel() {
             </button>
           </form>
           {inviteError && <p style={{ color: "var(--expense)", fontSize: 12.5, marginTop: -8, marginBottom: 12 }}>{inviteError}</p>}
-          {lastInviteUrl && (
+          {lastInviteUrl && lastInviteEmailSent && (
+            <div className="tip success" style={{ display: "block", marginBottom: 14 }}>
+              <p style={{ fontWeight: 600 }}>Invite emailed to {lastInviteEmail}.</p>
+            </div>
+          )}
+          {lastInviteUrl && !lastInviteEmailSent && (
             <div className="tip insight" style={{ display: "block", marginBottom: 14 }}>
               <p style={{ fontWeight: 600, marginBottom: 6 }}>
-                Invite created — no email was sent, share this link directly:
+                Invite created — we couldn&apos;t email it, share this link directly:
               </p>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <code style={{ fontSize: 11.5, wordBreak: "break-all" }}>{lastInviteUrl}</code>
@@ -277,6 +322,31 @@ export default function TeamPanel() {
           })}
         </div>
       </div>
+
+      {data.canManageTeam && (
+        <div className="items-section">
+          <div className="items-count">Recent activity</div>
+          {loadingActivity && !activity ? (
+            <p className="sub">Loading…</p>
+          ) : !activity || activity.length === 0 ? (
+            <p className="sub">No activity yet.</p>
+          ) : (
+            <div className="items-list" style={{ maxHeight: 260 }}>
+              {activity.map((entry) => (
+                <div className="item-row" key={entry.id}>
+                  <div className="item-left" style={{ minWidth: 0 }}>
+                    <span className="dot" style={{ background: "var(--accent)" }} />
+                    <div style={{ minWidth: 0 }}>
+                      <div className="item-name" style={{ whiteSpace: "normal" }}>{entry.summary}</div>
+                      <div className="item-meta">{entry.actorEmail} · {relativeTime(entry.createdAt)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {!data.isOwner && (
         <button type="button" className="cancel-btn" onClick={handleLeave} style={{ marginTop: 4 }}>

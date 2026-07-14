@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateToken } from "@/lib/tokens";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { passwordResetEmail, sendEmail } from "@/lib/email";
 
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 hour
 const RESET_REQUEST_LIMIT = 5;
@@ -33,8 +34,14 @@ export async function POST(req: Request) {
   });
 
   const resetUrl = `${new URL(req.url).origin}/reset-password/${resetToken.token}`;
-  // No email provider is configured yet — surface the link here instead of emailing it.
-  console.log(`[password reset] ${email}: ${resetUrl}`);
+  const { subject, html } = passwordResetEmail(resetUrl);
+  const result = await sendEmail(email, subject, html);
 
-  return NextResponse.json({ ok: true, resetUrl });
+  if (!result.sent) {
+    // No email provider configured (or the send failed) — fall back to surfacing the link
+    // directly so the flow still works end to end.
+    console.log(`[password reset] ${email}: ${resetUrl} (email not sent: ${result.reason})`);
+  }
+
+  return NextResponse.json({ ok: true, emailSent: result.sent, resetUrl: result.sent ? undefined : resetUrl });
 }

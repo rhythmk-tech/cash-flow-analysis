@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
 import { canEditData } from "@/lib/roles";
-import { formatDateOnly, parseDateOnly } from "@/lib/forecast";
+import { formatDateOnly, money, parseDateOnly } from "@/lib/forecast";
+import { logActivity } from "@/lib/activity";
+import { checkAndSendNegativeBalanceAlert } from "@/lib/alerts";
 
 function serialize(user: {
   companyName: string;
@@ -83,5 +85,23 @@ export async function PUT(req: Request) {
       forecastStart: true,
     },
   });
+
+  const changeDescriptions: string[] = [];
+  if (data.startingBalance !== undefined) changeDescriptions.push(`starting balance to ${money(data.startingBalance as number)}`);
+  if (data.totalWeeks !== undefined) changeDescriptions.push(`forecast length to ${data.totalWeeks} weeks`);
+  if (data.bearPct !== undefined) changeDescriptions.push(`bear scenario to ${data.bearPct}%`);
+  if (data.bullPct !== undefined) changeDescriptions.push(`bull scenario to ${data.bullPct}%`);
+  if (data.forecastStart !== undefined) changeDescriptions.push(`Week 1 start date to ${formatDateOnly(data.forecastStart as Date)}`);
+  if (changeDescriptions.length > 0) {
+    await logActivity(
+      session.companyId,
+      session.userId,
+      session.userEmail,
+      "settings.update",
+      `Changed ${changeDescriptions.join(", ")}`
+    );
+  }
+  await checkAndSendNegativeBalanceAlert(session.companyId, new URL(req.url).origin);
+
   return NextResponse.json(serialize(user));
 }

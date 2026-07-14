@@ -1,4 +1,4 @@
-import { Frequency, ItemType, parseDateOnly, weekNumberForDate } from "./forecast";
+import { Frequency, ItemType, dateForWeek, formatDateOnly, parseDateOnly } from "./forecast";
 
 export interface ImportedItemPayload {
   type: ItemType;
@@ -6,7 +6,7 @@ export interface ImportedItemPayload {
   name: string;
   amount: number;
   frequency: Frequency;
-  startWeek: number;
+  startDate: string;
   lineLabel: string;
 }
 
@@ -176,25 +176,26 @@ export function interpretRows(headerRow: string[], dataRows: string[][], forecas
 
     const frequency = parseFrequency(get("frequency") || undefined);
 
-    let startWeek = 1;
+    let startDate = formatDateOnly(forecastStart);
     const rawDate = get("date");
     const rawStartWeek = get("startweek");
     if (rawDate) {
       const parsedDate = tryParseDate(rawDate);
       if (parsedDate) {
-        startWeek = Math.max(1, weekNumberForDate(parsedDate, forecastStart));
+        startDate = formatDateOnly(parsedDate);
       } else {
-        warnings.push(`Row ${rowNum}: couldn't read date "${rawDate}" — defaulted to week 1.`);
+        warnings.push(`Row ${rowNum}: couldn't read date "${rawDate}" — defaulted to Week 1.`);
         defaultedStartWeek++;
       }
     } else if (rawStartWeek) {
       const n = Number(rawStartWeek);
-      startWeek = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+      const week = Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+      startDate = formatDateOnly(dateForWeek(week, forecastStart));
     } else {
       defaultedStartWeek++;
     }
 
-    valid.push({ type, category, name, amount, frequency, startWeek, lineLabel: category });
+    valid.push({ type, category, name, amount, frequency, startDate, lineLabel: category });
   });
 
   if (defaultedCategory > 0) {

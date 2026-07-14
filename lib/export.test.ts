@@ -11,7 +11,7 @@ const items: LineItem[] = [
     name: "Sales",
     amount: 1000,
     frequency: "weekly",
-    startWeek: 1,
+    startDate: "2026-07-13",
     lineLabel: "Sales Revenue",
   },
   {
@@ -21,7 +21,7 @@ const items: LineItem[] = [
     name: "Rent",
     amount: 400,
     frequency: "weekly",
-    startWeek: 1,
+    startDate: "2026-07-13",
     lineLabel: "Rent",
   },
 ];
@@ -33,7 +33,7 @@ describe("weeklyLedgerToCsv", () => {
     const weekly = computeWeekly(items, {}, 0, 3, FS);
     const csv = weeklyLedgerToCsv(weekly);
     const rows = csv.trim().split("\n");
-    expect(rows[0]).toBe("Week,Income,Expenses,Net,Balance");
+    expect(rows[0]).toBe("Week,Income,Expenses,Net,Forecasted Balance");
     expect(rows).toHaveLength(4);
     expect(rows[1]).toBe("W1,1000.00,400.00,600.00,600.00");
   });

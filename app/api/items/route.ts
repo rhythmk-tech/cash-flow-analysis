@@ -2,6 +2,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
 import { canEditData } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
+import { formatDateOnly, money, parseDateOnly } from "@/lib/forecast";
+import { checkAndSendNegativeBalanceAlert } from "@/lib/alerts";
+
+function serializeItem<T extends { startDate: Date }>(item: T) {
+  return { ...item, startDate: formatDateOnly(item.startDate) };
+}
 
 export async function GET() {
   const session = await requireCompanyId();
@@ -11,7 +18,7 @@ export async function GET() {
     where: { userId: session.companyId },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json(items);
+  return NextResponse.json(items.map(serializeItem));
 }
 
 export async function POST(req: Request) {
@@ -22,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  const { type, category, name, amount, frequency, startWeek, lineLabel } = body || {};
+  const { type, category, name, amount, frequency, startDate, lineLabel } = body || {};
 
   if (type !== "income" && type !== "expense") {
     return NextResponse.json({ error: "Invalid type." }, { status: 400 });
@@ -41,7 +48,10 @@ export async function POST(req: Request) {
   if (!allowedFrequencies.includes(frequency)) {
     return NextResponse.json({ error: "Invalid frequency." }, { status: 400 });
   }
-  const week = Math.max(1, Number(startWeek) || 1);
+  const parsedStartDate = parseDateOnly(String(startDate));
+  if (Number.isNaN(parsedStartDate.getTime())) {
+    return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
+  }
 
   const item = await prisma.lineItem.create({
     data: {
@@ -51,9 +61,19 @@ export async function POST(req: Request) {
       name,
       amount: amt,
       frequency,
-      startWeek: week,
+      startDate: parsedStartDate,
       lineLabel: lineLabel || category,
     },
   });
-  return NextResponse.json(item, { status: 201 });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "item.create",
+    `Added ${type} "${name}" (${money(amt)}/${frequency})`
+  );
+  await checkAndSendNegativeBalanceAlert(session.companyId, new URL(req.url).origin);
+
+  return NextResponse.json(serializeItem(item), { status: 201 });
 }

@@ -33,9 +33,15 @@ model User {
   // and not stored here.
   role String @default("editor")
 
+  // Tracks the last negative-balance alert email sent for this company, so a mutation that
+  // leaves the same week still-negative doesn't re-fire the email every time. See lib/alerts.ts.
+  lastNegativeAlertWeek Int?
+  lastNegativeAlertAt   DateTime?
+
   // Data owned by this row when it is acting as a company (activeCompanyId is null on the owner).
   items     LineItem[]
   overrides Override[]
+  actuals   Actual[]
 
   passwordResetTokens PasswordResetToken[]
 }
@@ -74,7 +80,9 @@ model LineItem {
   name      String
   amount    Float
   frequency String // "onetime" | "weekly" | "biweekly" | "monthly"
-  startWeek Int
+  startDate DateTime // absolute calendar date this item first occurs — NOT relative to forecastStart,
+  // so editing the forecast's Week-1 start date never silently moves an item's real-world date.
+  // Its position within the current forecast window is recomputed on the fly (see occurrencesFor).
   lineLabel String
   createdAt DateTime @default(now())
 
@@ -91,5 +99,35 @@ model Override {
   value  Float
 
   @@unique([userId, type, label, week])
+  @@index([userId])
+}
+
+// One entry per mutation a team member makes, for accountability once more than one person
+// can edit a company's data. actorEmail is denormalized so history stays readable even after
+// the actor is later removed from the team.
+model ActivityLog {
+  id          String   @id @default(cuid())
+  companyId   String
+  actorUserId String
+  actorEmail  String
+  action      String
+  summary     String
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}
+
+// A user-reported actual closing balance for a past week, compared against what the forecast
+// predicted for that week to show how accurate the model has been.
+model Actual {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  week      Int
+  balance   Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, week])
   @@index([userId])
 }

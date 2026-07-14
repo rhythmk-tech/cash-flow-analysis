@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { logActivity } from "@/lib/activity";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireCompanyId();
@@ -16,5 +17,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   await prisma.invitation.delete({ where: { id } });
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "member.invite_revoked",
+    `Revoked invite to ${invitation.email}`
+  );
+
   return NextResponse.json({ ok: true });
 }

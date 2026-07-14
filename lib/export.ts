@@ -18,10 +18,18 @@ function csvRow(fields: (string | number)[]): string {
   return fields.map(csvField).join(",");
 }
 
-export function weeklyLedgerToCsv(weekly: WeekRow[]): string {
-  const lines = [csvRow(["Week", "Income", "Expenses", "Net", "Balance"])];
+export function weeklyLedgerToCsv(weekly: WeekRow[], actuals: Record<number, number> = {}): string {
+  const hasActuals = Object.keys(actuals).length > 0;
+  const header = ["Week", "Income", "Expenses", "Net", "Forecasted Balance"];
+  if (hasActuals) header.push("Actual Balance", "Variance");
+  const lines = [csvRow(header)];
   weekly.forEach((w) => {
-    lines.push(csvRow([`W${w.week}`, w.income.toFixed(2), w.expense.toFixed(2), w.net.toFixed(2), w.balance.toFixed(2)]));
+    const row = [`W${w.week}`, w.income.toFixed(2), w.expense.toFixed(2), w.net.toFixed(2), w.balance.toFixed(2)];
+    if (hasActuals) {
+      const actual = actuals[w.week];
+      row.push(actual !== undefined ? actual.toFixed(2) : "", actual !== undefined ? (actual - w.balance).toFixed(2) : "");
+    }
+    lines.push(csvRow(row));
   });
   return lines.join("\n") + "\n";
 }

@@ -110,7 +110,7 @@ describe("interpretRows", () => {
     );
     expect(result.errors).toEqual([]);
     expect(result.valid).toEqual([
-      { type: "expense", category: "Rent", name: "Office rent", amount: 3200, frequency: "monthly", startWeek: 1, lineLabel: "Rent" },
+      { type: "expense", category: "Rent", name: "Office rent", amount: 3200, frequency: "monthly", startDate: "2026-07-13", lineLabel: "Rent" },
     ]);
   });
 
@@ -137,8 +137,8 @@ describe("interpretRows", () => {
       FS
     );
     expect(result.valid).toEqual([
-      { type: "expense", category: "Rent", name: "Rent", amount: 2000, frequency: "onetime", startWeek: 1, lineLabel: "Rent" },
-      { type: "income", category: "Sales", name: "Sale", amount: 500, frequency: "onetime", startWeek: 1, lineLabel: "Sales" },
+      { type: "expense", category: "Rent", name: "Rent", amount: 2000, frequency: "onetime", startDate: "2026-07-13", lineLabel: "Rent" },
+      { type: "income", category: "Sales", name: "Sale", amount: 500, frequency: "onetime", startDate: "2026-07-13", lineLabel: "Sales" },
     ]);
   });
 
@@ -147,10 +147,9 @@ describe("interpretRows", () => {
     expect(result.valid[0]).toMatchObject({ type: "expense", amount: 2000 });
   });
 
-  it("converts a date column into the correct forecast week", () => {
+  it("reads a date column directly as the item's absolute start date", () => {
     const result = interpretRows(["name", "category", "amount", "date"], [["Rent", "Rent", "-1000", "2026-07-27"]], FS);
-    // FS is Jul 13 (week 1); Jul 27 is 14 days later -> week 3
-    expect(result.valid[0].startWeek).toBe(3);
+    expect(result.valid[0].startDate).toBe("2026-07-27");
   });
 
   it("normalizes frequency synonyms", () => {

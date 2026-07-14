@@ -1,20 +1,18 @@
 "use client";
 
-import { FREQ_LABELS, LineItem, dateForWeek, money } from "@/lib/forecast";
+import { FREQ_LABELS, LineItem, parseDateOnly, money } from "@/lib/forecast";
 
 export default function ItemsList({
   items,
   editingItemId,
   onEdit,
   onDelete,
-  forecastStart,
   canEdit = true,
 }: {
   items: LineItem[];
   editingItemId?: string | null;
   onEdit: (item: LineItem) => void;
   onDelete: (id: string) => void;
-  forecastStart: Date;
   canEdit?: boolean;
 }) {
   return (
@@ -40,7 +38,7 @@ export default function ItemsList({
                   <div className="item-meta">
                     {item.category !== item.name ? `${item.category} · ` : ""}
                     {FREQ_LABELS[item.frequency]} · starts{" "}
-                    {dateForWeek(item.startWeek, forecastStart).toLocaleDateString("en-US", {
+                    {parseDateOnly(item.startDate).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                     })}

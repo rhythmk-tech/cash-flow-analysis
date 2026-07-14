@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
 import { generateToken } from "@/lib/tokens";
-import { canAssignRole, canManageTeam, isAssignableRole } from "@/lib/roles";
+import { canAssignRole, canManageTeam, isAssignableRole, ROLE_LABELS } from "@/lib/roles";
+import { logActivity } from "@/lib/activity";
+import { sendEmail, teamInviteEmail } from "@/lib/email";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -45,8 +47,29 @@ export async function POST(req: Request) {
   });
 
   const inviteUrl = `${new URL(req.url).origin}/invite/${invitation.token}`;
-  // No email provider is configured yet — surface the link here so the inviter can share it manually.
-  console.log(`[invite] ${email} invited to company ${session.companyId} as ${role}: ${inviteUrl}`);
+
+  const company = await prisma.user.findUnique({
+    where: { id: session.companyId },
+    select: { companyName: true },
+  });
+  const { subject, html } = teamInviteEmail(
+    company?.companyName ?? "your team",
+    session.userEmail,
+    ROLE_LABELS[role],
+    inviteUrl
+  );
+  const emailResult = await sendEmail(email, subject, html);
+  if (!emailResult.sent) {
+    console.log(`[invite] ${email} invited to company ${session.companyId} as ${role}: ${inviteUrl} (email not sent: ${emailResult.reason})`);
+  }
+
+  await logActivity(
+    session.companyId,
+    session.userId,
+    session.userEmail,
+    "member.invited",
+    `Invited ${email} as ${ROLE_LABELS[role]}`
+  );
 
   return NextResponse.json({
     invitation: {
@@ -57,5 +80,6 @@ export async function POST(req: Request) {
       expiresAt: invitation.expiresAt,
     },
     inviteUrl,
+    emailSent: emailResult.sent,
   });
 }
