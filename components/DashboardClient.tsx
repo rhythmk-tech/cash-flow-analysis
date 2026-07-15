@@ -44,6 +44,8 @@ interface Settings {
   bearPct: number;
   bullPct: number;
   forecastStart: string;
+  incomeRowOrder: string[];
+  expenseRowOrder: string[];
 }
 
 type Tab = "overview" | "scenarios" | "ledger" | "detail" | "insights" | "team";
@@ -189,6 +191,17 @@ export default function DashboardClient({
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ week, balance }),
+    });
+  }
+
+  function handleReorderRows(type: ItemType, order: string[]) {
+    setSettings((prev) =>
+      type === "income" ? { ...prev, incomeRowOrder: order } : { ...prev, expenseRowOrder: order }
+    );
+    fetch("/api/row-order", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, order }),
     });
   }
 
@@ -514,6 +527,9 @@ export default function DashboardClient({
                   onEditOverride={handleEditOverride}
                   onForecastStartChange={handleForecastStartChange}
                   onStartingBalanceChange={(v) => saveSettingsDebounced({ startingBalance: v })}
+                  incomeOrder={settings.incomeRowOrder}
+                  expenseOrder={settings.expenseRowOrder}
+                  onReorder={handleReorderRows}
                   canEdit={canEdit}
                 />
               </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   ItemType,
   LineItem,
@@ -10,6 +11,7 @@ import {
   getRowWeekAmount,
   money,
   overrideKey,
+  sortLabels,
   weekDateRange,
 } from "@/lib/forecast";
 import { detailedForecastToCsv, downloadCsv } from "@/lib/export";
@@ -88,6 +90,13 @@ function EditableRow({
   forecastStart,
   onEditOverride,
   canEdit,
+  draggable,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   type: ItemType;
   label: string;
@@ -98,10 +107,34 @@ function EditableRow({
   forecastStart: Date;
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
   canEdit: boolean;
+  draggable: boolean;
+  isDragging: boolean;
+  isDragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   return (
-    <tr className="dt-line">
-      <td>{label}</td>
+    <tr
+      className={`dt-line${isDragging ? " dt-dragging" : ""}${isDragOver ? " dt-drag-over" : ""}`}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      <td>
+        {draggable && (
+          <span
+            className="dt-drag-handle"
+            draggable
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            title="Drag to reorder"
+          >
+            ⠿
+          </span>
+        )}
+        {label}
+      </td>
       {weekHeaders.map((w) => {
         const value = getRowWeekAmount(items, overrides, type, label, w, totalWeeks, forecastStart);
         const isEdited = Object.prototype.hasOwnProperty.call(overrides, overrideKey(type, label, w));
@@ -141,6 +174,9 @@ export default function DetailTable({
   onEditOverride,
   onForecastStartChange,
   onStartingBalanceChange,
+  incomeOrder,
+  expenseOrder,
+  onReorder,
   canEdit = true,
 }: {
   items: LineItem[];
@@ -152,11 +188,60 @@ export default function DetailTable({
   onEditOverride: (type: ItemType, label: string, week: number, value: number) => void;
   onForecastStartChange: (dateStr: string) => void;
   onStartingBalanceChange: (value: number) => void;
+  incomeOrder: string[];
+  expenseOrder: string[];
+  onReorder: (type: ItemType, order: string[]) => void;
   canEdit?: boolean;
 }) {
   const weekHeaders = Array.from({ length: totalWeeks }, (_, i) => i + 1);
-  const incomeLabels = getRowLabels(items, "income");
-  const expenseLabels = getRowLabels(items, "expense");
+  const incomeLabels = sortLabels(getRowLabels(items, "income"), incomeOrder);
+  const expenseLabels = sortLabels(getRowLabels(items, "expense"), expenseOrder);
+
+  const [dragging, setDragging] = useState<{ type: ItemType; label: string } | null>(null);
+  const [dragOverLabel, setDragOverLabel] = useState<string | null>(null);
+
+  function handleDrop(type: ItemType, targetLabel: string, orderedLabels: string[]) {
+    setDragOverLabel(null);
+    if (!dragging || dragging.type !== type || dragging.label === targetLabel) {
+      setDragging(null);
+      return;
+    }
+    const newOrder = orderedLabels.filter((l) => l !== dragging.label);
+    const targetIdx = newOrder.indexOf(targetLabel);
+    newOrder.splice(targetIdx, 0, dragging.label);
+    onReorder(type, newOrder);
+    setDragging(null);
+  }
+
+  function renderRows(type: ItemType, labels: string[]) {
+    return labels.map((label) => (
+      <EditableRow
+        key={label}
+        type={type}
+        label={label}
+        items={items}
+        overrides={overrides}
+        totalWeeks={totalWeeks}
+        weekHeaders={weekHeaders}
+        forecastStart={forecastStart}
+        onEditOverride={onEditOverride}
+        canEdit={canEdit}
+        draggable={canEdit}
+        isDragging={dragging?.type === type && dragging.label === label}
+        isDragOver={dragOverLabel === label}
+        onDragStart={() => setDragging({ type, label })}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (dragOverLabel !== label) setDragOverLabel(label);
+        }}
+        onDrop={() => handleDrop(type, label, labels)}
+        onDragEnd={() => {
+          setDragging(null);
+          setDragOverLabel(null);
+        }}
+      />
+    ));
+  }
 
   return (
     <div className="card">
@@ -183,7 +268,7 @@ export default function DetailTable({
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
         Full category breakdown from your line items
         {canEdit
-          ? <> — click any line-item number or the Week 1 opening balance to edit it. Totals, net cash flow, and closing balance stay as computed sums so they always match your charts. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
+          ? <> — click any line-item number or the Week 1 opening balance to edit it. Drag the ⠿ handle to reorder a row. Totals, net cash flow, and closing balance stay as computed sums so they always match your charts. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
           : "."}
       </span>
       <div className="table-scroll">
@@ -241,20 +326,7 @@ export default function DetailTable({
                 </td>
               </tr>
             )}
-            {incomeLabels.map((label) => (
-              <EditableRow
-                key={label}
-                type="income"
-                label={label}
-                items={items}
-                overrides={overrides}
-                totalWeeks={totalWeeks}
-                weekHeaders={weekHeaders}
-                forecastStart={forecastStart}
-                onEditOverride={onEditOverride}
-                canEdit={canEdit}
-              />
-            ))}
+            {renderRows("income", incomeLabels)}
             <ReadRow className="dt-total dt-income" label="TOTAL INFLOWS" values={weekly.map((w) => w.income)} />
 
             <tr className="dt-spacer">
@@ -270,20 +342,7 @@ export default function DetailTable({
                 </td>
               </tr>
             )}
-            {expenseLabels.map((label) => (
-              <EditableRow
-                key={label}
-                type="expense"
-                label={label}
-                items={items}
-                overrides={overrides}
-                totalWeeks={totalWeeks}
-                weekHeaders={weekHeaders}
-                forecastStart={forecastStart}
-                onEditOverride={onEditOverride}
-                canEdit={canEdit}
-              />
-            ))}
+            {renderRows("expense", expenseLabels)}
             <ReadRow className="dt-total dt-expense" label="TOTAL OUTFLOWS" values={weekly.map((w) => w.expense)} />
 
             <tr className="dt-spacer">

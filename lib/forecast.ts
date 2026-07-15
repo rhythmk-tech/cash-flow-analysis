@@ -135,6 +135,18 @@ export function getRowLabels(items: LineItem[], type: ItemType): string[] {
   return labels;
 }
 
+// Applies a saved manual row order to a natural (first-seen) label list. Labels present in
+// `order` come first, in that order; any label not in `order` (e.g. a brand-new item) is
+// appended afterward in its natural order. An empty `order` returns `labels` unchanged, so
+// accounts that have never reordered anything see exactly today's behavior.
+export function sortLabels(labels: string[], order: string[]): string[] {
+  if (order.length === 0) return labels;
+  const rank = new Map(order.map((label, i) => [label, i]));
+  const known = labels.filter((l) => rank.has(l)).sort((a, b) => rank.get(a)! - rank.get(b)!);
+  const unknown = labels.filter((l) => !rank.has(l));
+  return [...known, ...unknown];
+}
+
 export function buildLabelToCategoryMap(items: LineItem[]): Record<string, string> {
   const map: Record<string, string> = {};
   for (const it of items) map[it.lineLabel || it.category] = it.category;

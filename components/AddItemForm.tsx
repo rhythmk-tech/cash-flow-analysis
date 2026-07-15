@@ -52,7 +52,7 @@ export default function AddItemForm({
     if (!editingItem) return;
     setFormType(editingItem.type);
     setCategory(editingItem.category);
-    setNewCategory("");
+    setNewCategory(editingItem.name);
     setAmount(String(editingItem.amount));
     setStartDate(editingItem.startDate);
     setFrequency(editingItem.frequency);
@@ -75,7 +75,7 @@ export default function AddItemForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    let finalCategory = selectedCategory;
+    let finalCategory = isEditing ? newCategory.trim() : selectedCategory;
     if (finalCategory === NEW_CATEGORY_VALUE) {
       finalCategory = newCategory.trim();
       if (!finalCategory) return;
@@ -136,20 +136,30 @@ export default function AddItemForm({
         </button>
       </div>
       <form className="form-col" onSubmit={handleSubmit}>
-        <select value={selectedCategory} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-          <option value={NEW_CATEGORY_VALUE}>+ New category / bucket…</option>
-        </select>
-        {selectedCategory === NEW_CATEGORY_VALUE && (
+        {isEditing ? (
           <input
-            placeholder="New category / bucket name"
+            placeholder="Name"
             value={newCategory}
             onChange={(e) => setNewCategory(e.target.value)}
           />
+        ) : (
+          <>
+            <select value={selectedCategory} onChange={(e) => setCategory(e.target.value)}>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              <option value={NEW_CATEGORY_VALUE}>+ New category / bucket…</option>
+            </select>
+            {selectedCategory === NEW_CATEGORY_VALUE && (
+              <input
+                placeholder="New category / bucket name"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+              />
+            )}
+          </>
         )}
         <div className="row2">
           <input

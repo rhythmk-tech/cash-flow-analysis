@@ -13,6 +13,7 @@ import {
   occurrencesFor,
   overrideKey,
   parseDateOnly,
+  sortLabels,
   weekDateRange,
   weekNumberForDate,
 } from "./forecast";
@@ -140,6 +141,28 @@ describe("getRowLabels", () => {
   it("falls back to category when lineLabel is empty", () => {
     const items = [item({ lineLabel: "", category: "Misc Opex" })];
     expect(getRowLabels(items, "expense")).toEqual(["Misc Opex"]);
+  });
+});
+
+describe("sortLabels", () => {
+  it("returns the natural order unchanged when no custom order is saved", () => {
+    expect(sortLabels(["Rent", "Payroll", "Utilities"], [])).toEqual(["Rent", "Payroll", "Utilities"]);
+  });
+
+  it("applies a saved order", () => {
+    expect(sortLabels(["Rent", "Payroll", "Utilities"], ["Utilities", "Rent", "Payroll"])).toEqual([
+      "Utilities",
+      "Rent",
+      "Payroll",
+    ]);
+  });
+
+  it("appends labels missing from the saved order, in their natural order", () => {
+    expect(sortLabels(["Rent", "Payroll", "Utilities"], ["Payroll"])).toEqual(["Payroll", "Rent", "Utilities"]);
+  });
+
+  it("ignores order entries for labels that no longer exist", () => {
+    expect(sortLabels(["Rent"], ["Deleted Item", "Rent"])).toEqual(["Rent"]);
   });
 });
 

@@ -20,6 +20,8 @@ export default async function DashboardPage() {
         bearPct: true,
         bullPct: true,
         forecastStart: true,
+        incomeRowOrder: true,
+        expenseRowOrder: true,
       },
     }),
     prisma.lineItem.findMany({ where: { userId: companyId }, orderBy: { createdAt: "asc" } }),
@@ -62,6 +64,8 @@ export default async function DashboardPage() {
         bearPct: user.bearPct,
         bullPct: user.bullPct,
         forecastStart: formatDateOnly(user.forecastStart),
+        incomeRowOrder: user.incomeRowOrder,
+        expenseRowOrder: user.expenseRowOrder,
       }}
     />
   );

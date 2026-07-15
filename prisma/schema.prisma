@@ -22,6 +22,13 @@ model User {
   bullPct         Float    @default(10)
   forecastStart   DateTime @default(now())
 
+  // Manual drag-and-drop order for Detailed Forecast rows, as an ordered list of lineLabels.
+  // Empty means "no custom order yet" — rows fall back to first-seen order, matching the
+  // behavior every existing account already has today. Any label not present here (e.g. a
+  // brand-new item) is appended after the ordered ones. See lib/forecast.ts's sortLabels.
+  incomeRowOrder  String[] @default([])
+  expenseRowOrder String[] @default([])
+
   // If set, this user operates on another user's (the "company owner's") data instead of
   // their own. Null means this user is their own company.
   activeCompanyId String?
