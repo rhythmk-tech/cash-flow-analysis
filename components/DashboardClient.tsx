@@ -23,6 +23,7 @@ import {
   money,
   overrideKey,
   parseDateOnly,
+  weekDateRange,
 } from "@/lib/forecast";
 
 interface OverrideRecord {
@@ -305,7 +306,12 @@ export default function DashboardClient({
               <span className="kpi-label">Ending balance</span>
               <span className="kpi-icon">◆</span>
             </div>
-            <div className="kpi-value">{money(endingBalance)}</div>
+            <div className="kpi-value">
+              {money(endingBalance)}
+              <span className="kpi-value-sub">
+                ({weekDateRange(weekly.length ? weekly[weekly.length - 1].week : settings.totalWeeks, forecastStart)})
+              </span>
+            </div>
           </div>
           <div
             className="kpi-card"
@@ -317,7 +323,7 @@ export default function DashboardClient({
             </div>
             <div className="kpi-value" style={{ color: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}>
               {money(minWeek.balance)}
-              <span className="kpi-value-sub">(Week {minWeek.week})</span>
+              <span className="kpi-value-sub">({weekDateRange(minWeek.week, forecastStart)})</span>
             </div>
           </div>
         </div>
@@ -421,19 +427,13 @@ export default function DashboardClient({
                       <h2>Cash Trajectory (Closing Balance)</h2>
                       <span className="sub">Running balance week over week</span>
                     </div>
-                    <TrajectoryChart weekly={weekly} />
-                  </div>
-                  <div className="card">
-                    <div className="card-head">
-                      <h2>Balance & net change</h2>
-                    </div>
-                    <NetChart weekly={weekly} />
+                    <TrajectoryChart weekly={weekly} forecastStart={forecastStart} />
                   </div>
                   <div className="card">
                     <div className="card-head">
                       <h2>Weekly Inflows vs Outflows</h2>
                     </div>
-                    <FlowChart weekly={weekly} />
+                    <FlowChart weekly={weekly} forecastStart={forecastStart} />
                     <div className="legend">
                       <span className="legend-item">
                         <span className="legend-swatch" style={{ background: "var(--income)" }} />
@@ -444,6 +444,12 @@ export default function DashboardClient({
                         Outflows
                       </span>
                     </div>
+                  </div>
+                  <div className="card">
+                    <div className="card-head">
+                      <h2>Balance & net change</h2>
+                    </div>
+                    <NetChart weekly={weekly} forecastStart={forecastStart} />
                   </div>
                 </div>
               </div>
@@ -482,7 +488,7 @@ export default function DashboardClient({
                       % revenue
                     </span>
                   </div>
-                  <ScenarioChart bear={bear} base={base} bull={bull} />
+                  <ScenarioChart bear={bear} base={base} bull={bull} forecastStart={forecastStart} />
                   <div className="legend">
                     <span className="legend-item">
                       <span className="legend-swatch" style={{ background: "var(--expense)" }} />

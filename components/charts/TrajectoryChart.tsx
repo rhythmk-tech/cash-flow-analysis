@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, WeekRow, money } from "@/lib/forecast";
+import { COLORS, WeekRow, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
 
-export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
+export default function TrajectoryChart({ weekly, forecastStart }: { weekly: WeekRow[]; forecastStart: Date }) {
   const [active, setActive] = useState<number | null>(null);
   const balances = weekly.map((w) => w.balance);
   const maxBal = Math.max(...balances, 0);
@@ -93,7 +93,7 @@ export default function TrajectoryChart({ weekly }: { weekly: WeekRow[] }) {
         <ChartTooltip
           x={xFor(active)}
           y={yFor(weekly[active].balance)}
-          lines={[`Week ${weekly[active].week}`, `Balance: ${money(weekly[active].balance)}`]}
+          lines={[weekDateRange(weekly[active].week, forecastStart), `Balance: ${money(weekly[active].balance)}`]}
           viewW={W}
           viewH={H}
         />

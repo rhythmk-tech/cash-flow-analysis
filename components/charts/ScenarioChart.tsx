@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, ScenarioPoint, money } from "@/lib/forecast";
+import { COLORS, ScenarioPoint, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
@@ -11,10 +11,12 @@ export default function ScenarioChart({
   bear,
   base,
   bull,
+  forecastStart,
 }: {
   bear: ScenarioPoint[];
   base: ScenarioPoint[];
   bull: ScenarioPoint[];
+  forecastStart: Date;
 }) {
   const [active, setActive] = useState<number | null>(null);
   const allVals = [...bear, ...base, ...bull].map((w) => w.balance);
@@ -104,7 +106,7 @@ export default function ScenarioChart({
           x={xFor(active)}
           y={yFor(base[active].balance)}
           lines={[
-            `Week ${base[active].week}`,
+            weekDateRange(base[active].week, forecastStart),
             `Bear: ${money(bear[active].balance)}`,
             `Base: ${money(base[active].balance)}`,
             `Bull: ${money(bull[active].balance)}`,

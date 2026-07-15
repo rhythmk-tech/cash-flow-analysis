@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, WeekRow, money } from "@/lib/forecast";
+import { COLORS, WeekRow, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
 const plotW = W - padL - padR, plotH = H - padT - padB;
 
-export default function FlowChart({ weekly }: { weekly: WeekRow[] }) {
+export default function FlowChart({ weekly, forecastStart }: { weekly: WeekRow[]; forecastStart: Date }) {
   const [active, setActive] = useState<number | null>(null);
   const maxVal = Math.max(...weekly.map((w) => Math.max(w.income, w.expense)), 1);
   const yFor = (v: number) => padT + plotH - (v / maxVal) * plotH;
@@ -71,7 +71,7 @@ export default function FlowChart({ weekly }: { weekly: WeekRow[] }) {
           x={padL + active * bw + bw / 2}
           y={yFor(Math.max(weekly[active].income, weekly[active].expense))}
           lines={[
-            `Week ${weekly[active].week}`,
+            weekDateRange(weekly[active].week, forecastStart),
             `Inflows: ${money(weekly[active].income)}`,
             `Outflows: ${money(weekly[active].expense)}`,
           ]}
