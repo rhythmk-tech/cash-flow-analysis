@@ -3,12 +3,18 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
+import { IDLE_TIMEOUT_SECONDS } from "@/lib/session-config";
 
 const LOGIN_LIMIT = 10;
 const LOGIN_WINDOW_MS = 10 * 60 * 1000;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
+  // Sessions expire after IDLE_TIMEOUT_SECONDS of inactivity — updateAge keeps the cookie's
+  // expiry sliding forward on active use, but stop making requests for that long and the
+  // session cookie itself expires, so a request after that is simply unauthenticated.
+  // IdleLogout.tsx enforces the same window client-side for an immediate redirect instead of
+  // waiting on the next request to fail.
+  session: { strategy: "jwt", maxAge: IDLE_TIMEOUT_SECONDS, updateAge: 5 * 60 },
   pages: { signIn: "/login" },
   providers: [
     Credentials({

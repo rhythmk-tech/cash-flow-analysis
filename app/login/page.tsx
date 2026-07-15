@@ -9,6 +9,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/dashboard";
+  const idleLogout = searchParams.get("reason") === "idle";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,6 +38,12 @@ function LoginForm() {
       <div className="auth-card">
         <h1 className="display">Log in</h1>
         <p className="sub">Access your company&apos;s cash flow forecast.</p>
+        {idleLogout && !error && (
+          <div className="tip insight" style={{ marginBottom: 14 }}>
+            <span className="tip-icon">🔒</span>
+            <p>You were signed out after a period of inactivity, for security.</p>
+          </div>
+        )}
         {error && <div className="auth-error">{error}</div>}
         <form onSubmit={handleSubmit} className="form-col">
           <div>

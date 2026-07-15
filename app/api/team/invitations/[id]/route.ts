@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireCompanyId } from "@/lib/session";
+import { canManageTeam } from "@/lib/roles";
 import { logActivity } from "@/lib/activity";
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await requireCompanyId();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!session.isOwner) {
-    return NextResponse.json({ error: "Only the company owner can revoke invitations." }, { status: 403 });
+  if (!canManageTeam(session.role)) {
+    return NextResponse.json({ error: "Only the Owner or an Admin can revoke invitations." }, { status: 403 });
   }
 
   const { id } = await params;
