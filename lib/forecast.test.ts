@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   LineItem,
+  axisLabelStep,
   buildLabelToCategoryMap,
   computeScenario,
   computeTips,
@@ -292,6 +293,22 @@ describe("weekDateRange", () => {
     const start = new Date(2026, 6, 13);
     expect(weekDateRange(2, start)).toBe("07/20-07/26");
     expect(weekDateRange(3, start)).toBe("07/27-08/02");
+  });
+});
+
+describe("axisLabelStep", () => {
+  it("shows every week when each week's band is wide enough for a date-range label", () => {
+    expect(axisLabelStep(70)).toBe(1);
+    expect(axisLabelStep(844 / 12)).toBe(1); // default 12-week forecast at the charts' plot width
+  });
+
+  it("skips weeks once bands get too narrow to fit a label", () => {
+    expect(axisLabelStep(844 / 26)).toBe(3); // max 26-week forecast
+    expect(axisLabelStep(10)).toBe(7);
+  });
+
+  it("never returns less than 1", () => {
+    expect(axisLabelStep(1000)).toBe(1);
   });
 });
 

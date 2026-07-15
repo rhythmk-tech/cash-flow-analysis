@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, WeekRow, money, weekDateRange } from "@/lib/forecast";
+import { COLORS, WeekRow, axisLabelStep, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
@@ -24,7 +24,7 @@ export default function TrajectoryChart({ weekly, forecastStart }: { weekly: Wee
     weekly.map((w, i) => `L${xFor(i).toFixed(1)},${yFor(w.balance).toFixed(1)}`).join(" ") +
     ` L${xFor(n - 1).toFixed(1)},${yFor(0).toFixed(1)} Z`;
 
-  const step = n > 14 ? 2 : 1;
+  const step = axisLabelStep(bw);
   const yTicks = 4;
   const zeroY = yFor(0);
 
@@ -72,7 +72,7 @@ export default function TrajectoryChart({ weekly, forecastStart }: { weekly: Wee
       {weekly.map((w, i) =>
         i % step === 0 ? (
           <text key={w.week} x={xFor(i)} y={H - 6} fontSize={10} fill={COLORS.inkMuted} textAnchor="middle">
-            W{w.week}
+            {weekDateRange(w.week, forecastStart)}
           </text>
         ) : null
       )}

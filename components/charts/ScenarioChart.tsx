@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, ScenarioPoint, money, weekDateRange } from "@/lib/forecast";
+import { COLORS, ScenarioPoint, axisLabelStep, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
@@ -28,7 +28,7 @@ export default function ScenarioChart({
   const bw = plotW / n;
   const xFor = (i: number) => padL + i * bw + bw / 2;
   const toPoints = (arr: ScenarioPoint[]) => arr.map((w, i) => `${xFor(i).toFixed(1)},${yFor(w.balance).toFixed(1)}`).join(" ");
-  const step = n > 14 ? 2 : 1;
+  const step = axisLabelStep(bw);
   const yTicks = 4;
   const zeroY = yFor(0);
 
@@ -83,7 +83,7 @@ export default function ScenarioChart({
       {base.map((w, i) =>
         i % step === 0 ? (
           <text key={w.week} x={xFor(i)} y={H - 6} fontSize={10} fill={COLORS.inkMuted} textAnchor="middle">
-            W{w.week}
+            {weekDateRange(w.week, forecastStart)}
           </text>
         ) : null
       )}

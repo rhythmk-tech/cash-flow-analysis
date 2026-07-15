@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { COLORS, WeekRow, money, weekDateRange } from "@/lib/forecast";
+import { COLORS, WeekRow, axisLabelStep, money, weekDateRange } from "@/lib/forecast";
 import { ChartTooltip } from "./ChartTooltip";
 
 const W = 900, H = 220, padL = 46, padR = 10, padT = 10, padB = 24;
@@ -13,7 +13,7 @@ export default function FlowChart({ weekly, forecastStart }: { weekly: WeekRow[]
   const yFor = (v: number) => padT + plotH - (v / maxVal) * plotH;
   const n = weekly.length || 1;
   const bw = plotW / n;
-  const step = n > 14 ? 2 : 1;
+  const step = axisLabelStep(bw);
   const yTicks = 4;
 
   return (
@@ -48,7 +48,7 @@ export default function FlowChart({ weekly, forecastStart }: { weekly: WeekRow[]
       {weekly.map((w, i) =>
         i % step === 0 ? (
           <text key={w.week} x={padL + i * bw + bw / 2} y={H - 6} fontSize={10} fill={COLORS.inkMuted} textAnchor="middle">
-            W{w.week}
+            {weekDateRange(w.week, forecastStart)}
           </text>
         ) : null
       )}

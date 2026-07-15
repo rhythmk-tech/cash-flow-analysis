@@ -244,6 +244,14 @@ export function weekDateRange(weekNum: number, forecastStart: Date): string {
   return `${fmt(start)}-${fmt(end)}`;
 }
 
+// weekDateRange's "MM/DD-MM/DD" label is ~70px wide at the 10px sans-serif font chart axes
+// use. Skips enough weeks between shown labels that they never overlap, however many weeks
+// are in the forecast (4-26) or however wide each week's band happens to be.
+const AXIS_DATE_LABEL_WIDTH_PX = 70;
+export function axisLabelStep(bandWidthPx: number): number {
+  return Math.max(1, Math.ceil(AXIS_DATE_LABEL_WIDTH_PX / bandWidthPx));
+}
+
 export const COLORS = {
   ink: "#12151C",
   inkMuted: "#6B7280",
