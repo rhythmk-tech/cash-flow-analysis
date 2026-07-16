@@ -14,6 +14,12 @@ model User {
   companyName  String
   createdAt    DateTime @default(now())
 
+  // Grants access to /admin — aggregate, cross-company usage analytics for operating the
+  // product. Deliberately separate from the in-company owner/admin/editor/viewer roles above,
+  // which only ever govern a single company's own data. Not settable through any UI; set
+  // directly in the database for whichever account(s) should have it.
+  isPlatformAdmin Boolean @default(false)
+
   // Forecast settings — only meaningful when this user IS a company (activeCompanyId is null).
   // Members who joined another company via invite read/write the owner's row instead.
   startingBalance Float    @default(0)

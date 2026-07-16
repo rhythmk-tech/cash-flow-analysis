@@ -34,3 +34,20 @@ export async function requireCompanyId(): Promise<SessionCompany | null> {
 
   return { userId, userEmail: user.email, companyId, isOwner, role };
 }
+
+// Gates /admin — cross-company usage analytics for operating the product, unrelated to the
+// in-company owner/admin/editor/viewer roles. Re-queried fresh each call (never trusts the
+// JWT) so revoking isPlatformAdmin takes effect immediately, matching requireCompanyId above.
+export async function requirePlatformAdmin(): Promise<{ userId: string; userEmail: string } | null> {
+  const session = await auth();
+  const userId = session?.user?.id as string | undefined;
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, isPlatformAdmin: true },
+  });
+  if (!user?.isPlatformAdmin) return null;
+
+  return { userId, userEmail: user.email };
+}

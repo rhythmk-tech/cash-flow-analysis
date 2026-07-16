@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import AddItemForm, { NewItemPayload } from "./AddItemForm";
 import ItemsList from "./ItemsList";
@@ -66,12 +67,14 @@ export default function DashboardClient({
   initialActuals,
   initialSettings,
   canEdit,
+  isPlatformAdmin,
 }: {
   initialItems: LineItem[];
   initialOverrides: OverrideRecord[];
   initialActuals: ActualRecord[];
   initialSettings: Settings;
   canEdit: boolean;
+  isPlatformAdmin: boolean;
 }) {
   const [items, setItems] = useState<LineItem[]>(initialItems);
   const [overridesArr, setOverridesArr] = useState<OverrideRecord[]>(initialOverrides);
@@ -275,6 +278,11 @@ export default function DashboardClient({
                 }
               />
             </label>
+            {isPlatformAdmin && (
+              <Link href="/admin" className="link-btn">
+                Admin
+              </Link>
+            )}
             <button className="signout-btn" onClick={() => signOut({ callbackUrl: "/" })}>
               Sign out
             </button>
