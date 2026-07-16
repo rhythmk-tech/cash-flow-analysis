@@ -137,7 +137,12 @@ model Actual {
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   week      Int
-  balance   Float
+  // Each independently optional — a week can have any subset recorded (e.g. actual income
+  // known before the exact closing balance is checked). balance was previously required;
+  // loosening it to optional keeps every existing row's value exactly as it was.
+  balance   Float?
+  income    Float?
+  expense   Float?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -1,7 +1,54 @@
 "use client";
 
-import { WeekRow, money, weekNumberForDate } from "@/lib/forecast";
+import { ActualValues, WeekRow, money, weekDateRange, weekNumberForDate } from "@/lib/forecast";
 import { downloadCsv, weeklyLedgerToCsv } from "@/lib/export";
+
+function ActualCell({
+  value,
+  forecastValue,
+  favorable,
+  canEdit,
+  isPastOrCurrent,
+  title,
+  onSave,
+}: {
+  value: number | undefined;
+  forecastValue: number;
+  favorable: "higher" | "lower";
+  canEdit: boolean;
+  isPastOrCurrent: boolean;
+  title: string;
+  onSave: (value: number) => void;
+}) {
+  if (!isPastOrCurrent) {
+    return <span style={{ color: "var(--inkFaint)" }}>—</span>;
+  }
+  const diff = value !== undefined ? value - forecastValue : null;
+  const isGood = diff === null ? null : favorable === "higher" ? diff >= 0 : diff <= 0;
+  return (
+    <input
+      className="dt-input"
+      type="number"
+      step="0.01"
+      placeholder="—"
+      defaultValue={value !== undefined ? value.toFixed(2) : ""}
+      key={`${title}-${value}`}
+      readOnly={!canEdit}
+      title={canEdit ? title : ""}
+      style={diff === null ? undefined : { color: isGood ? "var(--income)" : "var(--expense)" }}
+      onBlur={(e) => {
+        if (!canEdit) return;
+        const v = e.target.value.trim();
+        if (v === "") return;
+        const num = Number(v);
+        if (!isNaN(num)) onSave(num);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+      }}
+    />
+  );
+}
 
 export default function WeeklyLedger({
   weekly,
@@ -12,11 +59,11 @@ export default function WeeklyLedger({
   onEditActual,
 }: {
   weekly: WeekRow[];
-  actuals: Record<number, number>;
+  actuals: Record<number, ActualValues>;
   forecastStart: Date;
   companyName: string;
   canEdit: boolean;
-  onEditActual: (week: number, balance: number) => void;
+  onEditActual: (week: number, field: keyof ActualValues, value: number) => void;
 }) {
   const currentWeek = weekNumberForDate(new Date(), forecastStart);
 
@@ -28,7 +75,7 @@ export default function WeeklyLedger({
           <button
             type="button"
             className="link-btn"
-            onClick={() => downloadCsv(`${companyName}-weekly-ledger.csv`, weeklyLedgerToCsv(weekly, actuals))}
+            onClick={() => downloadCsv(`${companyName}-weekly-ledger.csv`, weeklyLedgerToCsv(weekly, actuals, forecastStart))}
           >
             ⬇ Export CSV
           </button>
@@ -39,8 +86,8 @@ export default function WeeklyLedger({
       </div>
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
         {canEdit
-          ? "Once a week has passed, enter what your balance actually ended up at to see how accurate this forecast has been."
-          : "Actual balances, once recorded, show how accurate this forecast has been."}
+          ? "Once a week has passed, record what actually happened — income, expenses, and closing balance are each stored independently, so variances stay accurate even if you only have some of the numbers yet."
+          : "Actual figures, once recorded, show how accurate this forecast has been."}
       </span>
       <div className="table-scroll">
         <table>
@@ -48,7 +95,9 @@ export default function WeeklyLedger({
             <tr>
               <th>Week</th>
               <th>Income</th>
+              <th>Actual Income</th>
               <th>Expenses</th>
+              <th>Actual Expenses</th>
               <th>Net</th>
               <th>Forecasted Balance</th>
               <th>Actual Balance</th>
@@ -58,18 +107,40 @@ export default function WeeklyLedger({
           <tbody>
             {weekly.map((w) => {
               const isPastOrCurrent = w.week <= currentWeek;
-              const actual = actuals[w.week];
-              const variance = actual !== undefined ? actual - w.balance : null;
+              const a = actuals[w.week] || {};
+              const balanceVariance = a.balance !== undefined ? a.balance - w.balance : null;
               return (
                 <tr key={w.week}>
                   <td className="mono" style={{ color: "var(--inkMuted)" }}>
-                    W{w.week}
+                    {weekDateRange(w.week, forecastStart)}
                   </td>
                   <td className="mono" style={{ color: "var(--income)" }}>
                     {w.income > 0 ? "+" + money(w.income) : "—"}
                   </td>
+                  <td className="mono">
+                    <ActualCell
+                      value={a.income}
+                      forecastValue={w.income}
+                      favorable="higher"
+                      canEdit={canEdit}
+                      isPastOrCurrent={isPastOrCurrent}
+                      title="Enter what your actual income was for this week"
+                      onSave={(v) => onEditActual(w.week, "income", v)}
+                    />
+                  </td>
                   <td className="mono" style={{ color: "var(--expense)" }}>
                     {w.expense > 0 ? "-" + money(w.expense) : "—"}
+                  </td>
+                  <td className="mono">
+                    <ActualCell
+                      value={a.expense}
+                      forecastValue={w.expense}
+                      favorable="lower"
+                      canEdit={canEdit}
+                      isPastOrCurrent={isPastOrCurrent}
+                      title="Enter what your actual expenses were for this week"
+                      onSave={(v) => onEditActual(w.week, "expense", v)}
+                    />
                   </td>
                   <td className="mono" style={{ fontWeight: 600, color: w.net >= 0 ? "var(--income)" : "var(--expense)" }}>
                     {w.net >= 0 ? "+" : ""}
@@ -79,39 +150,24 @@ export default function WeeklyLedger({
                     {money(w.balance)}
                   </td>
                   <td className="mono">
-                    {isPastOrCurrent ? (
-                      <input
-                        className="dt-input"
-                        type="number"
-                        step="0.01"
-                        placeholder="—"
-                        defaultValue={actual !== undefined ? actual.toFixed(2) : ""}
-                        key={`actual-${w.week}-${actual}`}
-                        readOnly={!canEdit}
-                        title={canEdit ? "Enter what your balance actually was at the end of this week" : ""}
-                        onBlur={(e) => {
-                          if (!canEdit) return;
-                          const v = e.target.value.trim();
-                          if (v === "") return;
-                          const num = Number(v);
-                          if (!isNaN(num)) onEditActual(w.week, num);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                        }}
-                      />
-                    ) : (
-                      <span style={{ color: "var(--inkFaint)" }}>—</span>
-                    )}
+                    <ActualCell
+                      value={a.balance}
+                      forecastValue={w.balance}
+                      favorable="higher"
+                      canEdit={canEdit}
+                      isPastOrCurrent={isPastOrCurrent}
+                      title="Enter what your balance actually was at the end of this week"
+                      onSave={(v) => onEditActual(w.week, "balance", v)}
+                    />
                   </td>
                   <td
                     className="mono"
                     style={{
                       fontWeight: 600,
-                      color: variance === null ? "var(--inkFaint)" : variance >= 0 ? "var(--income)" : "var(--expense)",
+                      color: balanceVariance === null ? "var(--inkFaint)" : balanceVariance >= 0 ? "var(--income)" : "var(--expense)",
                     }}
                   >
-                    {variance === null ? "—" : `${variance >= 0 ? "+" : ""}${money(variance)}`}
+                    {balanceVariance === null ? "—" : `${balanceVariance >= 0 ? "+" : ""}${money(balanceVariance)}`}
                   </td>
                 </tr>
               );

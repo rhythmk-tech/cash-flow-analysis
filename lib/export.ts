@@ -1,4 +1,5 @@
 import {
+  ActualValues,
   ItemType,
   LineItem,
   OverrideMap,
@@ -18,16 +19,25 @@ function csvRow(fields: (string | number)[]): string {
   return fields.map(csvField).join(",");
 }
 
-export function weeklyLedgerToCsv(weekly: WeekRow[], actuals: Record<number, number> = {}): string {
+export function weeklyLedgerToCsv(weekly: WeekRow[], actuals: Record<number, ActualValues> = {}, forecastStart?: Date): string {
   const hasActuals = Object.keys(actuals).length > 0;
-  const header = ["Week", "Income", "Expenses", "Net", "Forecasted Balance"];
+  const header = ["Week", "Income", "Actual Income", "Expenses", "Actual Expenses", "Net", "Forecasted Balance"];
   if (hasActuals) header.push("Actual Balance", "Variance");
   const lines = [csvRow(header)];
   weekly.forEach((w) => {
-    const row = [`W${w.week}`, w.income.toFixed(2), w.expense.toFixed(2), w.net.toFixed(2), w.balance.toFixed(2)];
+    const a = actuals[w.week] || {};
+    const weekLabel = forecastStart ? weekDateRange(w.week, forecastStart) : `W${w.week}`;
+    const row = [
+      weekLabel,
+      w.income.toFixed(2),
+      a.income !== undefined ? a.income.toFixed(2) : "",
+      w.expense.toFixed(2),
+      a.expense !== undefined ? a.expense.toFixed(2) : "",
+      w.net.toFixed(2),
+      w.balance.toFixed(2),
+    ];
     if (hasActuals) {
-      const actual = actuals[w.week];
-      row.push(actual !== undefined ? actual.toFixed(2) : "", actual !== undefined ? (actual - w.balance).toFixed(2) : "");
+      row.push(a.balance !== undefined ? a.balance.toFixed(2) : "", a.balance !== undefined ? (a.balance - w.balance).toFixed(2) : "");
     }
     lines.push(csvRow(row));
   });

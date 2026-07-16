@@ -50,7 +50,7 @@ export default async function DashboardPage() {
     value: o.value,
   }));
 
-  const mappedActuals = actuals.map((a) => ({ week: a.week, balance: a.balance }));
+  const mappedActuals = actuals.map((a) => ({ week: a.week, income: a.income, expense: a.expense, balance: a.balance }));
 
   return (
     <DashboardClient

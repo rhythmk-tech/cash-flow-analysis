@@ -24,6 +24,14 @@ export interface WeekRow {
   expenseByCat: Record<string, number>;
 }
 
+// A week's recorded actuals — income, expense, and balance are each independently optional,
+// since a user might confirm one before the others.
+export interface ActualValues {
+  income?: number;
+  expense?: number;
+  balance?: number;
+}
+
 export const FREQ_LABELS: Record<Frequency, string> = {
   onetime: "One-time",
   weekly: "Weekly",

@@ -33,9 +33,18 @@ describe("weeklyLedgerToCsv", () => {
     const weekly = computeWeekly(items, {}, 0, 3, FS);
     const csv = weeklyLedgerToCsv(weekly);
     const rows = csv.trim().split("\n");
-    expect(rows[0]).toBe("Week,Income,Expenses,Net,Forecasted Balance");
+    expect(rows[0]).toBe("Week,Income,Actual Income,Expenses,Actual Expenses,Net,Forecasted Balance");
     expect(rows).toHaveLength(4);
-    expect(rows[1]).toBe("W1,1000.00,400.00,600.00,600.00");
+    expect(rows[1]).toBe("W1,1000.00,,400.00,,600.00,600.00");
+  });
+
+  it("includes actual income/expense/balance and variance columns when actuals are recorded", () => {
+    const weekly = computeWeekly(items, {}, 0, 2, FS);
+    const csv = weeklyLedgerToCsv(weekly, { 1: { income: 1100, expense: 350, balance: 750 } }, FS);
+    const rows = csv.trim().split("\n");
+    expect(rows[0]).toBe("Week,Income,Actual Income,Expenses,Actual Expenses,Net,Forecasted Balance,Actual Balance,Variance");
+    expect(rows[1]).toBe("07/13-07/19,1000.00,1100.00,400.00,350.00,600.00,600.00,750.00,150.00");
+    expect(rows[2]).toBe("07/20-07/26,1000.00,,400.00,,600.00,1200.00,,");
   });
 });
 

@@ -14,6 +14,7 @@ import NetChart from "./charts/NetChart";
 import FlowChart from "./charts/FlowChart";
 import ScenarioChart from "./charts/ScenarioChart";
 import {
+  ActualValues,
   ItemType,
   LineItem,
   OverrideMap,
@@ -36,7 +37,9 @@ interface OverrideRecord {
 
 interface ActualRecord {
   week: number;
-  balance: number;
+  income?: number | null;
+  expense?: number | null;
+  balance?: number | null;
 }
 
 interface Settings {
@@ -93,10 +96,14 @@ export default function DashboardClient({
     return map;
   }, [overridesArr]);
 
-  const actualsMap: Record<number, number> = useMemo(() => {
-    const map: Record<number, number> = {};
+  const actualsMap: Record<number, ActualValues> = useMemo(() => {
+    const map: Record<number, ActualValues> = {};
     actualsArr.forEach((a) => {
-      map[a.week] = a.balance;
+      const values: ActualValues = {};
+      if (a.income !== null && a.income !== undefined) values.income = a.income;
+      if (a.expense !== null && a.expense !== undefined) values.expense = a.expense;
+      if (a.balance !== null && a.balance !== undefined) values.balance = a.balance;
+      map[a.week] = values;
     });
     return map;
   }, [actualsArr]);
@@ -181,20 +188,20 @@ export default function DashboardClient({
     });
   }
 
-  async function handleEditActual(week: number, balance: number) {
+  async function handleEditActual(week: number, field: keyof ActualValues, value: number) {
     setActualsArr((prev) => {
       const idx = prev.findIndex((a) => a.week === week);
       if (idx >= 0) {
         const copy = [...prev];
-        copy[idx] = { ...copy[idx], balance };
+        copy[idx] = { ...copy[idx], [field]: value };
         return copy;
       }
-      return [...prev, { week, balance }];
+      return [...prev, { week, [field]: value }];
     });
     await fetch("/api/actuals", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ week, balance }),
+      body: JSON.stringify({ week, [field]: value }),
     });
   }
 
