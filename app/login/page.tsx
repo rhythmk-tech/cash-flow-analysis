@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "next-auth/react";
+import { ShieldCheck } from "lucide-react";
 
 function LoginForm() {
   const router = useRouter();
@@ -40,7 +41,9 @@ function LoginForm() {
         <p className="sub">Access your company&apos;s cash flow forecast.</p>
         {idleLogout && !error && (
           <div className="tip insight" style={{ marginBottom: 14 }}>
-            <span className="tip-icon">🔒</span>
+            <span className="tip-icon">
+              <ShieldCheck size={15} />
+            </span>
             <p>You were signed out after a period of inactivity, for security.</p>
           </div>
         )}

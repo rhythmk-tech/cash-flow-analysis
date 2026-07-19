@@ -1,5 +1,6 @@
 "use client";
 
+import { Inbox, Pencil, X } from "lucide-react";
 import { FREQ_LABELS, LineItem, parseDateOnly, money } from "@/lib/forecast";
 
 export default function ItemsList({
@@ -20,8 +21,8 @@ export default function ItemsList({
       <div className="items-count">Current items ({items.length})</div>
       <div className="items-list">
         {items.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "18px 8px", color: "var(--inkMuted)" }}>
-            <div style={{ fontSize: 24, marginBottom: 6 }}>📭</div>
+          <div style={{ textAlign: "center", padding: "22px 8px", color: "var(--inkFaint)" }}>
+            <Inbox size={22} style={{ display: "block", margin: "0 auto 8px" }} />
             <p style={{ fontSize: 13, margin: 0 }}>No items yet — add your first one above.</p>
           </div>
         ) : (
@@ -60,10 +61,10 @@ export default function ItemsList({
                 {canEdit && (
                   <>
                     <button className="del-btn" title="Edit" onClick={() => onEdit(item)}>
-                      ✎
+                      <Pencil size={14} />
                     </button>
                     <button className="del-btn" title="Remove" onClick={() => onDelete(item.id)}>
-                      ✕
+                      <X size={14} />
                     </button>
                   </>
                 )}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import {
   ASSIGNABLE_ROLES,
   EffectiveRole,
@@ -272,7 +273,7 @@ export default function TeamPanel() {
                     Copy link
                   </button>
                   <button className="del-btn" title="Revoke" onClick={() => handleRevoke(inv.id)}>
-                    ✕
+                    <X size={14} />
                   </button>
                 </div>
               </div>
@@ -313,7 +314,7 @@ export default function TeamPanel() {
                   )}
                   {canRemoveThis && (
                     <button className="del-btn" title="Remove" onClick={() => handleRemove(m.id)}>
-                      ✕
+                      <X size={14} />
                     </button>
                   )}
                 </div>

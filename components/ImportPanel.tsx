@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AlertTriangle, Download } from "lucide-react";
 import { CSV_TEMPLATE, ImportedItemPayload } from "@/lib/import-parser";
 import { formatDateOnly, LineItem } from "@/lib/forecast";
 
@@ -111,10 +112,12 @@ export default function ImportPanel({
       </p>
       <div style={{ display: "flex", gap: 14, margin: "6px 0 12px" }}>
         <button type="button" className="link-btn" onClick={downloadExcelTemplate}>
-          ⬇ Download Excel template
+          <Download size={14} />
+          Download Excel template
         </button>
         <button type="button" className="link-btn" onClick={downloadCsvTemplate}>
-          ⬇ Download CSV template
+          <Download size={14} />
+          Download CSV template
         </button>
       </div>
       <p className="sub" style={{ margin: "0 0 12px" }}>
@@ -152,7 +155,13 @@ export default function ImportPanel({
               Ready to import {pending.length} item{pending.length === 1 ? "" : "s"} from {fileName}.
             </p>
             {parseWarnings.slice(0, 6).map((warning, i) => (
-              <p key={i} style={{ fontSize: 12.5, color: "var(--gold)" }}>⚠ {warning}</p>
+              <p
+                key={i}
+                style={{ fontSize: 12.5, color: "var(--gold)", display: "flex", alignItems: "center", gap: 5 }}
+              >
+                <AlertTriangle size={12} style={{ flexShrink: 0 }} />
+                {warning}
+              </p>
             ))}
             <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
               <button className="add-btn" type="button" disabled={submitting} onClick={handleConfirmImport}>

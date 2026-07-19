@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowLeft, RefreshCw, ShieldCheck } from "lucide-react";
 import { COLORS } from "@/lib/forecast";
 
 interface Account {
@@ -101,7 +102,9 @@ export default function AdminClient({ adminEmail }: { adminEmail: string }) {
       <div className="topbar">
         <div className="topbar-inner">
           <div className="brand">
-            <div className="brand-mark">A</div>
+            <div className="brand-mark">
+              <ShieldCheck size={18} />
+            </div>
             <div className="brand-text">
               <h1>Usage analytics</h1>
               <p>Signed in as {adminEmail} — account-level only, no forecast data</p>
@@ -109,10 +112,12 @@ export default function AdminClient({ adminEmail }: { adminEmail: string }) {
           </div>
           <div className="settings">
             <Link href="/dashboard" className="link-btn">
-              ← Back to dashboard
+              <ArrowLeft size={14} />
+              Back to dashboard
             </Link>
             <button type="button" className="link-btn" onClick={load} disabled={loading}>
-              {loading ? "Refreshing…" : "↻ Refresh"}
+              <RefreshCw size={14} />
+              {loading ? "Refreshing…" : "Refresh"}
             </button>
           </div>
         </div>

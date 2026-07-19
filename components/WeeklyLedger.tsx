@@ -1,5 +1,6 @@
 "use client";
 
+import { Download, Printer } from "lucide-react";
 import { ActualValues, WeekRow, money, weekDateRange, weekNumberForDate } from "@/lib/forecast";
 import { downloadCsv, weeklyLedgerToCsv } from "@/lib/export";
 
@@ -77,10 +78,12 @@ export default function WeeklyLedger({
             className="link-btn"
             onClick={() => downloadCsv(`${companyName}-weekly-ledger.csv`, weeklyLedgerToCsv(weekly, actuals, forecastStart))}
           >
-            ⬇ Export CSV
+            <Download size={14} />
+            Export CSV
           </button>
           <button type="button" className="link-btn" onClick={() => window.print()}>
-            🖨 Print / PDF
+            <Printer size={14} />
+            Print / PDF
           </button>
         </div>
       </div>

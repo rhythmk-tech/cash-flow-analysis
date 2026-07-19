@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FileUp, Lightbulb, Lock, Target } from "lucide-react";
 import { auth } from "@/auth";
 
 const OLD_WAY = [
@@ -34,10 +35,10 @@ const STEPS = [
 ];
 
 const FEATURES = [
-  { icon: "🔒", title: "Private by company", text: "Every account gets its own isolated forecast — nothing is shared or mixed between companies." },
-  { icon: "📄", title: "Bulk CSV import", text: "Already tracking things in a spreadsheet? Upload it once and populate your whole forecast in one go." },
-  { icon: "🎯", title: "Scenario planning", text: "Compare bear, base, and bull revenue scenarios side by side on the same chart." },
-  { icon: "💡", title: "Automatic insights", text: "Get plain-English warnings about negative weeks and thin buffers, generated from your own numbers." },
+  { icon: Lock, title: "Private by company", text: "Every account gets its own isolated forecast — nothing is shared or mixed between companies." },
+  { icon: FileUp, title: "Bulk CSV import", text: "Already tracking things in a spreadsheet? Upload it once and populate your whole forecast in one go." },
+  { icon: Target, title: "Scenario planning", text: "Compare bear, base, and bull revenue scenarios side by side on the same chart." },
+  { icon: Lightbulb, title: "Automatic insights", text: "Get plain-English warnings about negative weeks and thin buffers, generated from your own numbers." },
 ];
 
 export default async function Home() {
@@ -174,7 +175,10 @@ export default async function Home() {
           {FEATURES.map((f) => (
             <div className="onboarding-step" key={f.title}>
               <h3>
-                {f.icon} {f.title}
+                <span className="onboarding-step-icon">
+                  <f.icon size={15} />
+                </span>
+                {f.title}
               </h3>
               <p>{f.text}</p>
             </div>

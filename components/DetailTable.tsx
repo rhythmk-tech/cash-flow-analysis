@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Download, GripVertical, Printer } from "lucide-react";
 import {
   ItemType,
   LineItem,
@@ -130,7 +131,7 @@ function EditableRow({
             onDragEnd={onDragEnd}
             title="Drag to reorder"
           >
-            ⠿
+            <GripVertical size={13} />
           </span>
         )}
         {label}
@@ -258,17 +259,19 @@ export default function DetailTable({
               )
             }
           >
-            ⬇ Export CSV
+            <Download size={14} />
+            Export CSV
           </button>
           <button type="button" className="link-btn" onClick={() => window.print()}>
-            🖨 Print / PDF
+            <Printer size={14} />
+            Print / PDF
           </button>
         </div>
       </div>
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
         Full category breakdown from your line items
         {canEdit
-          ? <> — click any line-item number or the Week 1 opening balance to edit it. Drag the ⠿ handle to reorder a row. Totals, net cash flow, and closing balance stay as computed sums so they always match your charts. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
+          ? <> — click any line-item number or the Week 1 opening balance to edit it. Drag the handle to reorder a row. Totals, net cash flow, and closing balance stay as computed sums so they always match your charts. Set Week 1&apos;s start date below and the rest of the weeks recalculate automatically.</>
           : "."}
       </span>
       <div className="table-scroll">

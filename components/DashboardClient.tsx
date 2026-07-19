@@ -3,6 +3,27 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
+  CalendarRange,
+  CheckCircle2,
+  Download,
+  FileSpreadsheet,
+  FileUp,
+  LayoutGrid,
+  Lightbulb,
+  LogOut,
+  PlusCircle,
+  ShieldCheck,
+  Table2,
+  Target,
+  TrendingDown,
+  Users,
+  Wallet,
+} from "lucide-react";
 import AddItemForm, { NewItemPayload } from "./AddItemForm";
 import ItemsList from "./ItemsList";
 import ImportPanel from "./ImportPanel";
@@ -55,7 +76,7 @@ interface Settings {
 
 type Tab = "overview" | "scenarios" | "ledger" | "detail" | "insights" | "team";
 
-const TIP_ICONS = { warning: "⚠️", insight: "📊", success: "✅" };
+const TIP_ICONS = { warning: AlertTriangle, insight: BarChart3, success: CheckCircle2 };
 
 function companyInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -237,13 +258,13 @@ export default function DashboardClient({
     }, 500);
   }
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "overview", label: "📈 Overview" },
-    { key: "scenarios", label: "🎯 Scenarios" },
-    { key: "ledger", label: "📋 Weekly Ledger" },
-    { key: "detail", label: "🧾 Detailed Forecast" },
-    { key: "insights", label: "💡 Insights" },
-    { key: "team", label: "👥 Team" },
+  const tabs: { key: Tab; label: string; icon: typeof LayoutGrid }[] = [
+    { key: "overview", label: "Overview", icon: LayoutGrid },
+    { key: "scenarios", label: "Scenarios", icon: Target },
+    { key: "ledger", label: "Weekly Ledger", icon: CalendarRange },
+    { key: "detail", label: "Detailed Forecast", icon: Table2 },
+    { key: "insights", label: "Insights", icon: Lightbulb },
+    { key: "team", label: "Team", icon: Users },
   ];
 
   return (
@@ -286,11 +307,13 @@ export default function DashboardClient({
               />
             </label>
             {isPlatformAdmin && (
-              <Link href="/admin" className="link-btn">
+              <Link href="/admin" className="admin-link">
+                <ShieldCheck size={14} />
                 Admin
               </Link>
             )}
             <button className="signout-btn" onClick={() => signOut({ callbackUrl: "/" })}>
+              <LogOut size={14} />
               Sign out
             </button>
           </div>
@@ -299,27 +322,33 @@ export default function DashboardClient({
 
       <div className="wrap">
         <div className="kpi-grid">
-          <div className="kpi-card" style={{ ["--bar-color" as string]: "var(--income)" }}>
+          <div className="kpi-card">
             <div className="kpi-top">
               <span className="kpi-label">Total income</span>
-              <span className="kpi-icon" style={{ color: "var(--income)" }}>↑</span>
+              <span className="kpi-icon" style={{ color: "var(--income)" }}>
+                <ArrowUpRight size={16} />
+              </span>
             </div>
             <div className="kpi-value" style={{ color: "var(--income)" }}>
               {money(totalIncome)}
               <span className="kpi-value-sub">(Weeks 1–{settings.totalWeeks})</span>
             </div>
           </div>
-          <div className="kpi-card" style={{ ["--bar-color" as string]: "var(--expense)" }}>
+          <div className="kpi-card">
             <div className="kpi-top">
               <span className="kpi-label">Total expenses</span>
-              <span className="kpi-icon" style={{ color: "var(--expense)" }}>↓</span>
+              <span className="kpi-icon" style={{ color: "var(--expense)" }}>
+                <ArrowDownRight size={16} />
+              </span>
             </div>
             <div className="kpi-value" style={{ color: "var(--expense)" }}>{money(totalExpense)}</div>
           </div>
-          <div className="kpi-card" style={{ ["--bar-color" as string]: "var(--ink)" }}>
+          <div className="kpi-card">
             <div className="kpi-top">
               <span className="kpi-label">Ending balance</span>
-              <span className="kpi-icon">◆</span>
+              <span className="kpi-icon" style={{ color: "var(--ink)" }}>
+                <Wallet size={16} />
+              </span>
             </div>
             <div className="kpi-value">
               {money(endingBalance)}
@@ -328,13 +357,12 @@ export default function DashboardClient({
               </span>
             </div>
           </div>
-          <div
-            className="kpi-card"
-            style={{ ["--bar-color" as string]: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}
-          >
+          <div className="kpi-card">
             <div className="kpi-top">
               <span className="kpi-label">Lowest balance</span>
-              <span className="kpi-icon" style={{ color: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}>▽</span>
+              <span className="kpi-icon" style={{ color: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}>
+                <TrendingDown size={16} />
+              </span>
             </div>
             <div className="kpi-value" style={{ color: minWeek.balance < 0 ? "var(--expense)" : "var(--gold)" }}>
               {money(minWeek.balance)}
@@ -381,7 +409,12 @@ export default function DashboardClient({
                 {canEdit ? (
                   <div className="onboarding-steps onboarding-steps-3">
                     <div className="onboarding-step">
-                      <h3>➕ Add items one at a time</h3>
+                      <h3>
+                        <span className="onboarding-step-icon">
+                          <PlusCircle size={15} />
+                        </span>
+                        Add items one at a time
+                      </h3>
                       <p>
                         Use the &quot;Add a line item&quot; form on the left for individual income
                         sources or expenses — rent, payroll, recurring revenue, loan payments, and
@@ -389,7 +422,12 @@ export default function DashboardClient({
                       </p>
                     </div>
                     <div className="onboarding-step">
-                      <h3>📝 Start from a template</h3>
+                      <h3>
+                        <span className="onboarding-step-icon">
+                          <FileSpreadsheet size={15} />
+                        </span>
+                        Start from a template
+                      </h3>
                       <p>
                         Don&apos;t have anything to upload yet? Download a starter spreadsheet with
                         the exact columns the forecast needs, fill in your real numbers, and upload
@@ -397,15 +435,21 @@ export default function DashboardClient({
                       </p>
                       <a
                         className="link-btn"
-                        style={{ marginTop: 6, display: "inline-block" }}
+                        style={{ marginTop: 6, display: "inline-flex", alignItems: "center", gap: 5 }}
                         href={`/api/items/template?forecastStart=${encodeURIComponent(formatDateOnly(forecastStart))}`}
                         download="cash-flow-starter-template.xlsx"
                       >
-                        ⬇ Download Excel template
+                        <Download size={13} />
+                        Download Excel template
                       </a>
                     </div>
                     <div className="onboarding-step">
-                      <h3>📄 Import a file in bulk</h3>
+                      <h3>
+                        <span className="onboarding-step-icon">
+                          <FileUp size={15} />
+                        </span>
+                        Import a file in bulk
+                      </h3>
                       <p>
                         Already have your income and expenses in a spreadsheet, bank export, or
                         PDF? Open &quot;Bulk import&quot; on the left and upload it directly to
@@ -429,6 +473,7 @@ export default function DashboardClient({
                   className={`tab-btn${activeTab === t.key ? " active" : ""}`}
                   onClick={() => setActiveTab(t.key)}
                 >
+                  <t.icon size={15} />
                   {t.label}
                 </button>
               ))}
@@ -568,12 +613,17 @@ export default function DashboardClient({
                         Add income and expense line items to see tailored tips here.
                       </p>
                     ) : (
-                      tips.map((tip, i) => (
-                        <div className={`tip ${tip.type}`} key={i}>
-                          <span className="tip-icon">{TIP_ICONS[tip.type]}</span>
-                          <p>{tip.text}</p>
-                        </div>
-                      ))
+                      tips.map((tip, i) => {
+                        const TipIcon = TIP_ICONS[tip.type];
+                        return (
+                          <div className={`tip ${tip.type}`} key={i}>
+                            <span className="tip-icon">
+                              <TipIcon size={15} />
+                            </span>
+                            <p>{tip.text}</p>
+                          </div>
+                        );
+                      })
                     )}
                   </div>
                 </div>
