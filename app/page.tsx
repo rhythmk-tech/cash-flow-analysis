@@ -185,6 +185,14 @@ export default async function Home() {
           ))}
         </div>
       </section>
+
+      <footer className="landing-footer">
+        <span className="landing-footer-copy">© {new Date().getFullYear()} Cash Flow Forecaster</span>
+        <div className="landing-footer-links">
+          <Link href="/privacy">Privacy Policy</Link>
+          <Link href="/terms">Terms of Service</Link>
+        </div>
+      </footer>
     </div>
   );
 }

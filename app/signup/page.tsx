@@ -95,6 +95,11 @@ function SignupForm() {
             {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
+        <p className="auth-footer" style={{ marginTop: 14 }}>
+          By creating an account, you agree to our{" "}
+          <Link href="/terms">Terms of Service</Link> and{" "}
+          <Link href="/privacy">Privacy Policy</Link>.
+        </p>
         <div className="auth-footer">
           Already have an account? <Link href="/login">Log in</Link>
         </div>

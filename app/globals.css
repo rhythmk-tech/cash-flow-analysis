@@ -461,10 +461,42 @@ svg.chart-svg { width: 100%; height: 220px; display: block; }
 .landing-step h3 { font-size: 15px; margin: 0 0 7px; font-family: 'Sora', sans-serif; }
 .landing-step p { font-size: 13.5px; color: var(--inkMuted); margin: 0; line-height: 1.6; }
 
-.landing-features { max-width: 1040px; margin: 76px auto 84px; padding: 0 24px; box-sizing: border-box; }
+.landing-features { max-width: 1040px; margin: 76px auto 0; padding: 0 24px; box-sizing: border-box; }
 .landing-features-grid { grid-template-columns: repeat(4, 1fr); }
 @media (max-width: 900px) { .landing-features-grid { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 520px) { .landing-features-grid { grid-template-columns: 1fr; } }
+
+.landing-footer {
+  max-width: 1160px; margin: 64px auto 0; padding: 22px 32px; width: 100%; box-sizing: border-box;
+  border-top: 1px solid var(--borderSoft);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+}
+.landing-footer-copy { font-size: 12.5px; color: var(--inkFaint); }
+.landing-footer-links { display: flex; gap: 18px; }
+.landing-footer-links a { font-size: 12.5px; color: var(--inkMuted); text-decoration: none; }
+.landing-footer-links a:hover { color: var(--accent); }
+
+/* ---- legal pages (privacy / terms) ---- */
+.legal-shell { min-height: 100vh; background: var(--bg); }
+.legal-nav {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  padding: 22px 32px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box;
+}
+.legal-content { max-width: 800px; margin: 0 auto; padding: 8px 32px 80px; box-sizing: border-box; }
+.legal-content h1 { font-family: 'Sora', sans-serif; font-size: 32px; letter-spacing: -0.5px; margin: 8px 0 6px; }
+.legal-content .legal-updated { font-size: 13px; color: var(--inkFaint); margin: 0 0 24px; }
+.legal-content h2 {
+  font-family: 'Sora', sans-serif; font-size: 17px; letter-spacing: -0.2px; margin: 34px 0 12px;
+}
+.legal-content p { font-size: 14.5px; line-height: 1.75; color: var(--ink); margin: 0 0 14px; }
+.legal-content ul { margin: 0 0 14px; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+.legal-content li { font-size: 14.5px; line-height: 1.7; color: var(--ink); }
+.legal-content strong { font-weight: 600; }
+.legal-placeholder {
+  background: var(--goldSoft); color: #8a6212; border-radius: 5px; padding: 1px 6px;
+  font-family: 'JetBrains Mono', monospace; font-size: 13px; white-space: nowrap;
+}
+.legal-draft-notice { margin: 4px 0 32px; }
 
 /* ---- print (Detailed Forecast / Weekly Ledger export as PDF) ---- */
 @media print {
