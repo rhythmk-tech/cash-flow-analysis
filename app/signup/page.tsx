@@ -12,6 +12,7 @@ function SignupForm() {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +24,7 @@ function SignupForm() {
     const res = await fetch("/api/signup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName, email, password }),
+      body: JSON.stringify({ companyName, email, password, agreedToTerms }),
     });
     const data = await res.json().catch(() => ({}));
 
@@ -91,15 +92,23 @@ function SignupForm() {
               autoComplete="new-password"
             />
           </div>
+          <div className="checkbox-row">
+            <input
+              id="agreedToTerms"
+              type="checkbox"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              required
+            />
+            <label htmlFor="agreedToTerms">
+              I agree to the <Link href="/terms">Terms of Service</Link> and{" "}
+              <Link href="/privacy">Privacy Policy</Link>.
+            </label>
+          </div>
           <button className="add-btn" type="submit" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </button>
         </form>
-        <p className="auth-footer" style={{ marginTop: 14 }}>
-          By creating an account, you agree to our{" "}
-          <Link href="/terms">Terms of Service</Link> and{" "}
-          <Link href="/privacy">Privacy Policy</Link>.
-        </p>
         <div className="auth-footer">
           Already have an account? <Link href="/login">Log in</Link>
         </div>

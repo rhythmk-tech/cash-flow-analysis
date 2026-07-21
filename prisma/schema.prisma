@@ -14,6 +14,11 @@ model User {
   companyName  String
   createdAt    DateTime @default(now())
 
+  // When this account holder agreed to the Terms of Service / Privacy Policy at signup. Null
+  // for accounts created before this was tracked — nothing is backfilled, since we can't
+  // actually know whether/when they agreed.
+  termsAcceptedAt DateTime?
+
   // Grants access to /admin — aggregate, cross-company usage analytics for operating the
   // product. Deliberately separate from the in-company owner/admin/editor/viewer roles above,
   // which only ever govern a single company's own data. Not settable through any UI; set

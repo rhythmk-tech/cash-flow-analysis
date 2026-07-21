@@ -26,6 +26,9 @@ export async function POST(req: Request) {
   if (!companyName) {
     return NextResponse.json({ error: "Company name is required." }, { status: 400 });
   }
+  if (body?.agreedToTerms !== true) {
+    return NextResponse.json({ error: "You must agree to the Terms of Service and Privacy Policy." }, { status: 400 });
+  }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -34,7 +37,7 @@ export async function POST(req: Request) {
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.create({
-    data: { email, passwordHash, companyName, forecastStart: upcomingMonday() },
+    data: { email, passwordHash, companyName, forecastStart: upcomingMonday(), termsAcceptedAt: new Date() },
   });
 
   return NextResponse.json({ ok: true });

@@ -110,6 +110,12 @@ input:focus, select:focus {
   outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accentSoft);
 }
 input.mono { font-family: 'JetBrains Mono', monospace; }
+input[type="checkbox"] {
+  width: 16px; height: 16px; padding: 0; border-radius: 4px; accent-color: var(--accent);
+  flex-shrink: 0; margin: 2px 0 0;
+}
+.checkbox-row { display: flex; align-items: flex-start; gap: 9px; }
+.checkbox-row label { font-size: 13px; color: var(--inkMuted); line-height: 1.5; cursor: pointer; }
 
 /* ---- KPI strip ---- */
 .kpi-grid {
@@ -232,6 +238,23 @@ input.mono { font-family: 'JetBrains Mono', monospace; }
   transition: border-color .15s ease, color .15s ease, background .15s ease;
 }
 .cancel-btn:hover { border-color: var(--inkFaint); color: var(--ink); background: var(--surfaceAlt); }
+
+.danger-zone {
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--borderSoft);
+}
+.danger-btn {
+  padding: 9px 14px; border-radius: var(--radius-sm); border: 1px solid var(--expense);
+  background: var(--surface); color: var(--expense); font-weight: 600; font-size: 13px; cursor: pointer;
+  transition: background .15s var(--ease), color .15s var(--ease);
+}
+.danger-btn:hover { background: var(--expense); color: white; }
+.danger-panel {
+  margin-top: 12px; padding: 16px; border-radius: var(--radius-sm); background: var(--expenseSoft);
+  border: 1px solid color-mix(in srgb, var(--expense) 30%, transparent);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.danger-panel p { margin: 0; font-size: 13px; line-height: 1.6; color: var(--ink); }
+.danger-panel .field-label { color: var(--ink); }
 
 /* ---- onboarding ---- */
 .onboarding-card { text-align: left; }

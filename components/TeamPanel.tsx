@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { X } from "lucide-react";
 import {
   ASSIGNABLE_ROLES,
@@ -72,6 +73,11 @@ export default function TeamPanel() {
   const [changingRoleFor, setChangingRoleFor] = useState<string | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[] | null>(null);
   const [loadingActivity, setLoadingActivity] = useState(false);
+  const [showDeletePanel, setShowDeletePanel] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   async function load() {
     setLoading(true);
@@ -177,6 +183,24 @@ export default function TeamPanel() {
     router.refresh();
   }
 
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault();
+    setDeleteError("");
+    setDeleting(true);
+    const res = await fetch("/api/account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: deletePassword }),
+    });
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      setDeleting(false);
+      setDeleteError(result?.error || "Couldn't delete your account.");
+      return;
+    }
+    await signOut({ callbackUrl: "/" });
+  }
+
   async function copyLink(url: string) {
     try {
       await navigator.clipboard.writeText(url);
@@ -195,6 +219,8 @@ export default function TeamPanel() {
       </div>
     );
   }
+
+  const teammateCount = data.members.length - 1;
 
   return (
     <div className="card">
@@ -354,6 +380,91 @@ export default function TeamPanel() {
           Leave {data.companyName}
         </button>
       )}
+
+      <div className="danger-zone">
+        {!showDeletePanel ? (
+          <button type="button" className="danger-btn" onClick={() => setShowDeletePanel(true)}>
+            Delete my account
+          </button>
+        ) : (
+          <div className="danger-panel">
+            {data.isOwner && teammateCount > 0 ? (
+              <p>
+                <strong>
+                  You have {teammateCount} teammate{teammateCount === 1 ? "" : "s"}.
+                </strong>{" "}
+                Remove them from the team first — deleting your account also permanently deletes {data.companyName}&apos;s forecast data, so we don&apos;t let that happen while others still depend on it.
+              </p>
+            ) : (
+              <form className="form-col" onSubmit={handleDeleteAccount}>
+                <p>
+                  {data.isOwner ? (
+                    <>
+                      This permanently deletes <strong>{data.companyName}</strong> and all of its
+                      forecast data — line items, overrides, actuals, and activity history. This
+                      can&apos;t be undone.
+                    </>
+                  ) : (
+                    <>
+                      This permanently deletes your account. You&apos;ll lose access to{" "}
+                      {data.companyName}&apos;s data. This can&apos;t be undone.
+                    </>
+                  )}
+                </p>
+                <div>
+                  <label className="field-label" htmlFor="deletePassword">
+                    Confirm your password
+                  </label>
+                  <input
+                    id="deletePassword"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="field-label" htmlFor="deleteConfirmText">
+                    Type DELETE to confirm
+                  </label>
+                  <input
+                    id="deleteConfirmText"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    required
+                  />
+                </div>
+                {deleteError && <p style={{ color: "var(--expense)", fontWeight: 600 }}>{deleteError}</p>}
+                <div className="row2">
+                  <button
+                    type="submit"
+                    className="danger-btn"
+                    disabled={deleting || deleteConfirmText !== "DELETE"}
+                    style={{ flex: 1 }}
+                  >
+                    {deleting ? "Deleting…" : "Permanently delete my account"}
+                  </button>
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={() => {
+                      setShowDeletePanel(false);
+                      setDeletePassword("");
+                      setDeleteConfirmText("");
+                      setDeleteError("");
+                    }}
+                    disabled={deleting}
+                    style={{ flex: 1 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
