@@ -231,6 +231,17 @@ describe("computeWeekly", () => {
     expect(weeks[0].expenseByCat).toEqual({ Rent: 150 });
   });
 
+  it("omits a category from a week's breakdown when it contributes nothing that week", () => {
+    const items = [
+      item({ type: "expense", lineLabel: "Rent", category: "Rent", amount: 3000, frequency: "weekly", startDate: "2026-07-13" }),
+      item({ type: "expense", lineLabel: "Payroll", category: "Payroll", amount: 800, frequency: "onetime", startDate: "2026-08-03" }),
+    ];
+    const weeks = computeWeekly(items, {}, 0, 4, FS);
+    // Week 1 only has Rent charging; Payroll (which starts week 4) shouldn't leak into week 1 as a zero-value entry.
+    expect(Object.keys(weeks[0].expenseByCat)).toEqual(["Rent"]);
+    expect(Object.keys(weeks[3].expenseByCat).sort()).toEqual(["Payroll", "Rent"]);
+  });
+
   it("respects overrides when computing weekly totals", () => {
     const items = [item({ type: "income", lineLabel: "Sales", amount: 500, frequency: "weekly", startDate: "2026-07-13" })];
     const overrides = { [overrideKey("income", "Sales", 1)]: 900 };

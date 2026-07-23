@@ -183,12 +183,14 @@ export function computeWeekly(
     incomeLabels.forEach((label) => {
       const amt = getRowWeekAmount(items, overrides, "income", label, w, totalWeeks, forecastStart);
       income += amt;
+      if (amt === 0) return;
       const cat = labelToCategory[label] || label;
       incomeByCat[cat] = (incomeByCat[cat] || 0) + amt;
     });
     expenseLabels.forEach((label) => {
       const amt = getRowWeekAmount(items, overrides, "expense", label, w, totalWeeks, forecastStart);
       expense += amt;
+      if (amt === 0) return;
       const cat = labelToCategory[label] || label;
       expenseByCat[cat] = (expenseByCat[cat] || 0) + amt;
     });
