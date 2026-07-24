@@ -229,68 +229,47 @@ export function monthLabel(monthIndex: number, forecastStart: Date): string {
   return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
 }
 
-// The monthly summary is a long-range roll-up of the actual recurring line items — not derived
-// from the weekly grid — since it can run well past totalWeeks (up to 24 months) and a single
-// week doesn't map cleanly onto one calendar month anyway. Returns each occurrence's contributed
-// amount bucketed by month index (1..totalMonths); a month with multiple occurrences (e.g. 4-5
-// weekly hits) sums them all.
-function monthlyAmountsForItem(item: LineItem, totalMonths: number, forecastStart: Date): Map<number, number> {
-  const byMonth = new Map<number, number>();
-  const itemDate = parseDateOnly(item.startDate);
-  const endDate = item.endDate ? parseDateOnly(item.endDate) : null;
-  const horizonEnd = new Date(forecastStart.getFullYear(), forecastStart.getMonth() + totalMonths, 1); // exclusive
-
-  function record(date: Date): boolean {
-    if (date >= horizonEnd) return false;
-    if (endDate && date > endDate) return false;
-    const mi = monthIndexForDate(date, forecastStart);
-    if (mi >= 1) byMonth.set(mi, (byMonth.get(mi) || 0) + item.amount);
-    return true;
+// Which forecast weeks (1-based) have their start (Monday) date inside the given calendar
+// month, walking forward from week 1. A week's whole amount is attributed to the month its
+// start date falls in — the same convention used everywhere else a week needs a single "which
+// month is this" answer (see computeMonthly below). 1600 weeks (~30 years) is a hard safety
+// cap, far beyond the 24-month max the monthly summary supports.
+function weeksStartingInMonth(month: number, forecastStart: Date): number[] {
+  const weeks: number[] = [];
+  for (let w = 1; w <= 1600; w++) {
+    const mi = monthIndexForDate(dateForWeek(w, forecastStart), forecastStart);
+    if (mi > month) break;
+    if (mi === month) weeks.push(w);
   }
-
-  if (item.frequency === "onetime") {
-    record(itemDate);
-    return byMonth;
-  }
-  if (item.frequency === "monthly") {
-    let cursor = new Date(itemDate.getFullYear(), itemDate.getMonth(), 1);
-    for (let i = 0; i < 100; i++) {
-      if (!record(cursor)) break;
-      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-    }
-    return byMonth;
-  }
-  const stepDays = item.frequency === "weekly" ? 7 : 14;
-  let cursor = itemDate;
-  for (let i = 0; i < 1000; i++) {
-    if (!record(cursor)) break;
-    cursor = new Date(cursor.getTime() + stepDays * 86400000);
-  }
-  return byMonth;
+  return weeks;
 }
 
+// Sums a label's contribution to one calendar month by going through getRowWeekAmount for each
+// week that starts in that month — the exact same function (and override map) the weekly
+// Detailed Forecast grid uses — so a manual edit made there is guaranteed to show up here too,
+// with no separate month-bucketing logic that could drift out of sync.
 export function getRowMonthAmount(
   items: LineItem[],
+  overrides: OverrideMap,
   type: ItemType,
   label: string,
   month: number,
-  totalMonths: number,
   forecastStart: Date
 ): number {
-  let total = 0;
-  for (const it of items) {
-    if (it.type !== type) continue;
-    if ((it.lineLabel || it.category) !== label) continue;
-    total += monthlyAmountsForItem(it, totalMonths, forecastStart).get(month) || 0;
-  }
-  return total;
+  return weeksStartingInMonth(month, forecastStart).reduce(
+    (sum, w) => sum + getRowWeekAmount(items, overrides, type, label, w, w, forecastStart),
+    0
+  );
 }
 
-// A read-only, long-range monthly roll-up of the same line items computeWeekly uses — a
-// summary view, not an editable one, so there's no override map here (a manual weekly override
-// doesn't map cleanly onto a single calendar month, since a week can straddle two months).
+// A long-range monthly roll-up of the exact same weekly numbers computeWeekly produces
+// (including any manual override made in the weekly Detailed Forecast) — not a separate
+// recomputation from raw items, so the two views can never disagree. It can run well past
+// totalWeeks (up to 24 months): weeks beyond the weekly grid's editable range simply have no
+// overrides to apply, so they fall through to each item's natural recurring amount.
 export function computeMonthly(
   items: LineItem[],
+  overrides: OverrideMap,
   startingBalance: number,
   totalMonths: number,
   forecastStart: Date
@@ -308,14 +287,14 @@ export function computeMonthly(
     const expenseByCat: Record<string, number> = {};
 
     incomeLabels.forEach((label) => {
-      const amt = getRowMonthAmount(items, "income", label, m, totalMonths, forecastStart);
+      const amt = getRowMonthAmount(items, overrides, "income", label, m, forecastStart);
       income += amt;
       if (amt === 0) return;
       const cat = labelToCategory[label] || label;
       incomeByCat[cat] = (incomeByCat[cat] || 0) + amt;
     });
     expenseLabels.forEach((label) => {
-      const amt = getRowMonthAmount(items, "expense", label, m, totalMonths, forecastStart);
+      const amt = getRowMonthAmount(items, overrides, "expense", label, m, forecastStart);
       expense += amt;
       if (amt === 0) return;
       const cat = labelToCategory[label] || label;

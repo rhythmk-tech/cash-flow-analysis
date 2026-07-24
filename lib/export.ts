@@ -84,7 +84,7 @@ export function detailedForecastToCsv(
   return lines.join("\n") + "\n";
 }
 
-export function monthlySummaryToCsv(items: LineItem[], monthly: MonthRow[], totalMonths: number, forecastStart: Date): string {
+export function monthlySummaryToCsv(items: LineItem[], overrides: OverrideMap, monthly: MonthRow[], forecastStart: Date): string {
   const incomeLabels = getRowLabels(items, "income");
   const expenseLabels = getRowLabels(items, "expense");
 
@@ -94,7 +94,7 @@ export function monthlySummaryToCsv(items: LineItem[], monthly: MonthRow[], tota
 
   const rowFor = (label: string, values: number[]) => csvRow([label, ...values.map((v) => v.toFixed(2))]);
   const amountsFor = (type: ItemType, label: string) =>
-    monthly.map((m) => getRowMonthAmount(items, type, label, m.month, totalMonths, forecastStart));
+    monthly.map((m) => getRowMonthAmount(items, overrides, type, label, m.month, forecastStart));
 
   lines.push(rowFor("OPENING CASH BALANCE", monthly.map((m) => m.balance - m.net)));
   lines.push("");

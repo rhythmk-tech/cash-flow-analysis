@@ -151,8 +151,8 @@ export default function DashboardClient({
   );
 
   const monthly = useMemo(
-    () => computeMonthly(items, settings.startingBalance, settings.monthlySummaryMonths, forecastStart),
-    [items, settings.startingBalance, settings.monthlySummaryMonths, forecastStart]
+    () => computeMonthly(items, overridesMap, settings.startingBalance, settings.monthlySummaryMonths, forecastStart),
+    [items, overridesMap, settings.startingBalance, settings.monthlySummaryMonths, forecastStart]
   );
 
   const tips = useMemo(() => computeTips(weekly, settings.startingBalance), [weekly, settings.startingBalance]);
@@ -608,6 +608,7 @@ export default function DashboardClient({
                 />
                 <MonthlySummaryTable
                   items={items}
+                  overrides={overridesMap}
                   monthly={monthly}
                   totalMonths={settings.monthlySummaryMonths}
                   forecastStart={forecastStart}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Download, Printer } from "lucide-react";
-import { ItemType, LineItem, MonthRow, getRowLabels, getRowMonthAmount, money } from "@/lib/forecast";
+import { ItemType, LineItem, MonthRow, OverrideMap, getRowLabels, getRowMonthAmount, money } from "@/lib/forecast";
 import { downloadCsv, monthlySummaryToCsv } from "@/lib/export";
 
 function ReadRow({ className, label, values }: { className: string; label: string; values: number[] }) {
@@ -17,6 +17,7 @@ function ReadRow({ className, label, values }: { className: string; label: strin
 
 export default function MonthlySummaryTable({
   items,
+  overrides,
   monthly,
   totalMonths,
   forecastStart,
@@ -24,6 +25,7 @@ export default function MonthlySummaryTable({
   canEdit = true,
 }: {
   items: LineItem[];
+  overrides: OverrideMap;
   monthly: MonthRow[];
   totalMonths: number;
   forecastStart: Date;
@@ -34,7 +36,7 @@ export default function MonthlySummaryTable({
   const expenseLabels = getRowLabels(items, "expense");
 
   function rowFor(type: ItemType, label: string) {
-    return monthly.map((m) => getRowMonthAmount(items, type, label, m.month, totalMonths, forecastStart));
+    return monthly.map((m) => getRowMonthAmount(items, overrides, type, label, m.month, forecastStart));
   }
 
   return (
@@ -61,7 +63,7 @@ export default function MonthlySummaryTable({
           <button
             type="button"
             className="link-btn"
-            onClick={() => downloadCsv("monthly-cash-flow-summary.csv", monthlySummaryToCsv(items, monthly, totalMonths, forecastStart))}
+            onClick={() => downloadCsv("monthly-cash-flow-summary.csv", monthlySummaryToCsv(items, overrides, monthly, forecastStart))}
           >
             <Download size={14} />
             Export CSV
@@ -73,9 +75,9 @@ export default function MonthlySummaryTable({
         </div>
       </div>
       <span className="sub" style={{ display: "block", margin: "-6px 0 12px" }}>
-        A longer-range, read-only roll-up of the same line items shown above — adjustable from 1 to 24 months,
-        independent of the weekly forecast length. Manual weekly overrides aren&apos;t reflected here, since a
-        week doesn&apos;t map cleanly onto a single calendar month.
+        A longer-range, read-only roll-up of the same numbers shown in the Detailed Forecast above — any manual
+        edit made there carries through here too, adjustable from 1 to 24 months independent of the weekly
+        forecast length. Each week counts toward the month its start date falls in.
       </span>
       <div className="table-scroll">
         <table className="detail-table">

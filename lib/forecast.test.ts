@@ -317,7 +317,7 @@ describe("monthIndexForDate / monthLabel", () => {
 
 describe("computeMonthly", () => {
   it("carries the starting balance forward with no items", () => {
-    const months = computeMonthly([], 1000, 4, FS);
+    const months = computeMonthly([], {}, 1000, 4, FS);
     expect(months).toHaveLength(4);
     expect(months.every((m) => m.balance === 1000 && m.net === 0)).toBe(true);
   });
@@ -325,7 +325,7 @@ describe("computeMonthly", () => {
   it("sums every weekly occurrence that lands within a calendar month", () => {
     // Weekly $100 rent from Jul13: Jul has 3 occurrences (13,20,27) = 300; Aug has 5 (3,10,17,24,31) = 500.
     const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
-    const months = computeMonthly(items, 1000, 2, FS);
+    const months = computeMonthly(items, {}, 1000, 2, FS);
     expect(months.map((m) => m.expense)).toEqual([300, 500]);
     expect(months.map((m) => m.balance)).toEqual([700, 200]);
     expect(months.map((m) => m.label)).toEqual(["Jul 2026", "Aug 2026"]);
@@ -333,27 +333,61 @@ describe("computeMonthly", () => {
 
   it("recurs a monthly item once per month indefinitely without an end date", () => {
     const items = [item({ type: "income", lineLabel: "Sales", amount: 5000, frequency: "monthly", startDate: "2026-07-01" })];
-    const months = computeMonthly(items, 0, 6, FS);
+    const months = computeMonthly(items, {}, 0, 6, FS);
     expect(months.map((m) => m.income)).toEqual([5000, 5000, 5000, 5000, 5000, 5000]);
   });
 
   it("stops a recurring item's contribution once its end date has passed", () => {
     const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13", endDate: "2026-08-20" })];
-    const months = computeMonthly(items, 0, 3, FS);
+    const months = computeMonthly(items, {}, 0, 3, FS);
     // Aug occurrences on/before the 20th: 3, 10, 17 = 300 (24th and 31st are excluded)
     expect(months.map((m) => m.expense)).toEqual([300, 300, 0]);
   });
 
   it("places a one-time item in the single month its date falls in", () => {
     const items = [item({ type: "income", lineLabel: "Bonus", amount: 2000, frequency: "onetime", startDate: "2026-08-15" })];
-    const months = computeMonthly(items, 0, 3, FS);
+    const months = computeMonthly(items, {}, 0, 3, FS);
     expect(months.map((m) => m.income)).toEqual([0, 2000, 0]);
   });
 
   it("matches getRowMonthAmount for a single-label breakdown", () => {
     const items = [item({ type: "expense", lineLabel: "Rent", category: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
-    const months = computeMonthly(items, 0, 1, FS);
-    expect(getRowMonthAmount(items, "expense", "Rent", 1, 1, FS)).toBe(months[0].expense);
+    const months = computeMonthly(items, {}, 0, 1, FS);
+    expect(getRowMonthAmount(items, {}, "expense", "Rent", 1, FS)).toBe(months[0].expense);
+  });
+
+  it("reflects a manual weekly override made in the Detailed Forecast grid", () => {
+    // Week 1 (Jul13-19) normally has $100 rent; override it to $250 and the monthly total should
+    // include the override, not the item's natural amount — this is the guarantee the weekly
+    // and monthly views must never disagree on.
+    const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
+    const overrides = { [overrideKey("expense", "Rent", 1)]: 250 };
+    const withoutOverride = computeMonthly(items, {}, 0, 1, FS);
+    const withOverride = computeMonthly(items, overrides, 0, 1, FS);
+    expect(withoutOverride[0].expense).toBe(300); // Jul13, 20, 27 at $100 each
+    expect(withOverride[0].expense).toBe(450); // week 1 becomes 250 instead of 100: 250+100+100
+  });
+
+  it("a month's total equals the sum of computeWeekly's numbers for the weeks that fall in it", () => {
+    const items = [item({ type: "income", lineLabel: "Sales", amount: 500, frequency: "weekly", startDate: "2026-07-13" })];
+    const overrides = { [overrideKey("income", "Sales", 1)]: 900 };
+    // July 2026 (month 1) is made up of weeks 1-3 under FS.
+    const weekly = computeWeekly(items, overrides, 0, 3, FS);
+    const monthly = computeMonthly(items, overrides, 0, 1, FS);
+    const weeklySumForJuly = weekly.reduce((s, w) => s + w.income, 0);
+    expect(monthly[0].income).toBe(weeklySumForJuly);
+    expect(monthly[0].income).toBe(900 + 500 + 500); // week1 overridden, weeks 2-3 natural
+  });
+
+  it("an override on a week beyond the weekly grid's totalWeeks still isn't picked up (it can't exist there)", () => {
+    // Overrides only ever get created for weeks 1..totalWeeks via the weekly grid's UI, so a
+    // stray key for a week outside that range shouldn't happen in practice — but computeMonthly
+    // should still just reflect whatever's in the map, same as computeWeekly would.
+    const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
+    const overrides = { [overrideKey("expense", "Rent", 5)]: 999 }; // week 5 (Aug 10) falls in August
+    const months = computeMonthly(items, overrides, 0, 2, FS);
+    // August has 5 weeks (4-8: Aug3,10,17,24,31); week 5 is overridden to 999, the rest stay $100.
+    expect(months[1].expense).toBe(999 + 100 + 100 + 100 + 100);
   });
 });
 
