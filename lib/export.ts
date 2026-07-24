@@ -2,9 +2,11 @@ import {
   ActualValues,
   ItemType,
   LineItem,
+  MonthRow,
   OverrideMap,
   WeekRow,
   getRowLabels,
+  getRowMonthAmount,
   getRowWeekAmount,
   weekDateRange,
 } from "./forecast";
@@ -78,6 +80,37 @@ export function detailedForecastToCsv(
 
   lines.push(rowFor("NET CASH FLOW", weekly.map((w) => w.net)));
   lines.push(rowFor("CLOSING CASH BALANCE", weekly.map((w) => w.balance)));
+
+  return lines.join("\n") + "\n";
+}
+
+export function monthlySummaryToCsv(items: LineItem[], monthly: MonthRow[], totalMonths: number, forecastStart: Date): string {
+  const incomeLabels = getRowLabels(items, "income");
+  const expenseLabels = getRowLabels(items, "expense");
+
+  const lines: string[] = [];
+  const headerRow = ["Category", ...monthly.map((m) => m.label)];
+  lines.push(csvRow(headerRow));
+
+  const rowFor = (label: string, values: number[]) => csvRow([label, ...values.map((v) => v.toFixed(2))]);
+  const amountsFor = (type: ItemType, label: string) =>
+    monthly.map((m) => getRowMonthAmount(items, type, label, m.month, totalMonths, forecastStart));
+
+  lines.push(rowFor("OPENING CASH BALANCE", monthly.map((m) => m.balance - m.net)));
+  lines.push("");
+
+  lines.push(csvRow(["INFLOWS"]));
+  incomeLabels.forEach((label) => lines.push(rowFor(label, amountsFor("income", label))));
+  lines.push(rowFor("TOTAL INFLOWS", monthly.map((m) => m.income)));
+  lines.push("");
+
+  lines.push(csvRow(["OUTFLOWS"]));
+  expenseLabels.forEach((label) => lines.push(rowFor(label, amountsFor("expense", label))));
+  lines.push(rowFor("TOTAL OUTFLOWS", monthly.map((m) => m.expense)));
+  lines.push("");
+
+  lines.push(rowFor("NET CASH FLOW", monthly.map((m) => m.net)));
+  lines.push(rowFor("CLOSING CASH BALANCE", monthly.map((m) => m.balance)));
 
   return lines.join("\n") + "\n";
 }

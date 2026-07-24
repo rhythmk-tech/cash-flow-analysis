@@ -9,6 +9,8 @@ export interface LineItem {
   amount: number;
   frequency: Frequency;
   startDate: string; // "YYYY-MM-DD", absolute — see parseDateOnly/formatDateOnly
+  endDate?: string | null; // "YYYY-MM-DD", inclusive — last date a recurring item still occurs.
+  // Unused for "onetime" items (they only ever fire on startDate).
   lineLabel: string;
 }
 
@@ -79,6 +81,8 @@ export function occurrencesFor(item: LineItem, totalWeeks: number, forecastStart
   const weeks: number[] = [];
   const itemDate = parseDateOnly(item.startDate);
   const start = Math.max(1, weekNumberForDate(itemDate, forecastStart));
+  // endWeek is inclusive — the item still occurs in the week its end date falls in.
+  const endWeek = item.endDate ? weekNumberForDate(parseDateOnly(item.endDate), forecastStart) : Infinity;
   if (item.frequency === "onetime") {
     if (start <= totalWeeks) weeks.push(start);
     return weeks;
@@ -87,14 +91,15 @@ export function occurrencesFor(item: LineItem, totalWeeks: number, forecastStart
     let cursor = new Date(itemDate.getFullYear(), itemDate.getMonth(), 1);
     for (let i = 0; i < 36; i++) {
       const wk = weekNumberForDate(cursor, forecastStart);
-      if (wk > totalWeeks) break;
+      if (wk > totalWeeks || wk > endWeek) break;
       if (wk >= 1) weeks.push(wk);
       cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
     }
     return weeks;
   }
   const step = item.frequency === "weekly" ? 1 : 2; // biweekly
-  for (let w = start; w <= totalWeeks; w += step) weeks.push(w);
+  const lastWeek = Math.min(totalWeeks, endWeek);
+  for (let w = start; w <= lastWeek; w += step) weeks.push(w);
   return weeks;
 }
 
@@ -200,6 +205,128 @@ export function computeWeekly(
     weeks.push({ week: w, income, expense, net, balance: running, incomeByCat, expenseByCat });
   }
   return weeks;
+}
+
+export interface MonthRow {
+  month: number; // 1-indexed, relative to forecastStart's calendar month
+  label: string; // e.g. "Jul 2026"
+  income: number;
+  expense: number;
+  net: number;
+  balance: number;
+  incomeByCat: Record<string, number>;
+  expenseByCat: Record<string, number>;
+}
+
+// 1-indexed month number relative to forecastStart's calendar month (month 1 = that month).
+// Can be <1 for dates before forecastStart, same convention as weekNumberForDate.
+export function monthIndexForDate(date: Date, forecastStart: Date): number {
+  return (date.getFullYear() - forecastStart.getFullYear()) * 12 + (date.getMonth() - forecastStart.getMonth()) + 1;
+}
+
+export function monthLabel(monthIndex: number, forecastStart: Date): string {
+  const d = new Date(forecastStart.getFullYear(), forecastStart.getMonth() + (monthIndex - 1), 1);
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
+// The monthly summary is a long-range roll-up of the actual recurring line items — not derived
+// from the weekly grid — since it can run well past totalWeeks (up to 24 months) and a single
+// week doesn't map cleanly onto one calendar month anyway. Returns each occurrence's contributed
+// amount bucketed by month index (1..totalMonths); a month with multiple occurrences (e.g. 4-5
+// weekly hits) sums them all.
+function monthlyAmountsForItem(item: LineItem, totalMonths: number, forecastStart: Date): Map<number, number> {
+  const byMonth = new Map<number, number>();
+  const itemDate = parseDateOnly(item.startDate);
+  const endDate = item.endDate ? parseDateOnly(item.endDate) : null;
+  const horizonEnd = new Date(forecastStart.getFullYear(), forecastStart.getMonth() + totalMonths, 1); // exclusive
+
+  function record(date: Date): boolean {
+    if (date >= horizonEnd) return false;
+    if (endDate && date > endDate) return false;
+    const mi = monthIndexForDate(date, forecastStart);
+    if (mi >= 1) byMonth.set(mi, (byMonth.get(mi) || 0) + item.amount);
+    return true;
+  }
+
+  if (item.frequency === "onetime") {
+    record(itemDate);
+    return byMonth;
+  }
+  if (item.frequency === "monthly") {
+    let cursor = new Date(itemDate.getFullYear(), itemDate.getMonth(), 1);
+    for (let i = 0; i < 100; i++) {
+      if (!record(cursor)) break;
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return byMonth;
+  }
+  const stepDays = item.frequency === "weekly" ? 7 : 14;
+  let cursor = itemDate;
+  for (let i = 0; i < 1000; i++) {
+    if (!record(cursor)) break;
+    cursor = new Date(cursor.getTime() + stepDays * 86400000);
+  }
+  return byMonth;
+}
+
+export function getRowMonthAmount(
+  items: LineItem[],
+  type: ItemType,
+  label: string,
+  month: number,
+  totalMonths: number,
+  forecastStart: Date
+): number {
+  let total = 0;
+  for (const it of items) {
+    if (it.type !== type) continue;
+    if ((it.lineLabel || it.category) !== label) continue;
+    total += monthlyAmountsForItem(it, totalMonths, forecastStart).get(month) || 0;
+  }
+  return total;
+}
+
+// A read-only, long-range monthly roll-up of the same line items computeWeekly uses — a
+// summary view, not an editable one, so there's no override map here (a manual weekly override
+// doesn't map cleanly onto a single calendar month, since a week can straddle two months).
+export function computeMonthly(
+  items: LineItem[],
+  startingBalance: number,
+  totalMonths: number,
+  forecastStart: Date
+): MonthRow[] {
+  const incomeLabels = getRowLabels(items, "income");
+  const expenseLabels = getRowLabels(items, "expense");
+  const labelToCategory = buildLabelToCategoryMap(items);
+
+  let running = startingBalance;
+  const rows: MonthRow[] = [];
+  for (let m = 1; m <= totalMonths; m++) {
+    let income = 0,
+      expense = 0;
+    const incomeByCat: Record<string, number> = {};
+    const expenseByCat: Record<string, number> = {};
+
+    incomeLabels.forEach((label) => {
+      const amt = getRowMonthAmount(items, "income", label, m, totalMonths, forecastStart);
+      income += amt;
+      if (amt === 0) return;
+      const cat = labelToCategory[label] || label;
+      incomeByCat[cat] = (incomeByCat[cat] || 0) + amt;
+    });
+    expenseLabels.forEach((label) => {
+      const amt = getRowMonthAmount(items, "expense", label, m, totalMonths, forecastStart);
+      expense += amt;
+      if (amt === 0) return;
+      const cat = labelToCategory[label] || label;
+      expenseByCat[cat] = (expenseByCat[cat] || 0) + amt;
+    });
+
+    const net = income - expense;
+    running += net;
+    rows.push({ month: m, label: monthLabel(m, forecastStart), income, expense, net, balance: running, incomeByCat, expenseByCat });
+  }
+  return rows;
 }
 
 export interface ScenarioPoint {

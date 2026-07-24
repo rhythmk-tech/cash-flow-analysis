@@ -8,8 +8,8 @@ import { formatDateOnly, parseDateOnly } from "@/lib/forecast";
 
 const ALLOWED_FREQUENCIES = ["onetime", "weekly", "biweekly", "monthly"];
 
-function serializeItem<T extends { startDate: Date }>(item: T) {
-  return { ...item, startDate: formatDateOnly(item.startDate) };
+function serializeItem<T extends { startDate: Date; endDate: Date | null }>(item: T) {
+  return { ...item, startDate: formatDateOnly(item.startDate), endDate: item.endDate ? formatDateOnly(item.endDate) : null };
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,8 +26,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
 
   const body = await req.json().catch(() => null);
-  const { name, category, amount, frequency, startDate, lineLabel } = body || {};
-  const data: Record<string, string | number | Date> = {};
+  const { name, category, amount, frequency, startDate, endDate, lineLabel } = body || {};
+  const data: Record<string, string | number | Date | null> = {};
 
   if (name !== undefined) {
     if (!name || typeof name !== "string") {
@@ -61,6 +61,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
     }
     data.startDate = parsed;
+  }
+  if (endDate !== undefined) {
+    if (!endDate) {
+      data.endDate = null;
+    } else {
+      const parsed = parseDateOnly(String(endDate));
+      if (Number.isNaN(parsed.getTime())) {
+        return NextResponse.json({ error: "Invalid end date." }, { status: 400 });
+      }
+      const effectiveStart = (data.startDate as Date | undefined) ?? existing.startDate;
+      if (parsed < effectiveStart) {
+        return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
+      }
+      data.endDate = parsed;
+    }
   }
 
   const item = await prisma.lineItem.update({ where: { id }, data });

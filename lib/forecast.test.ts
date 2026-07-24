@@ -3,14 +3,18 @@ import {
   LineItem,
   axisLabelStep,
   buildLabelToCategoryMap,
+  computeMonthly,
   computeScenario,
   computeTips,
   computeWeekly,
   dateForWeek,
   formatDateOnly,
   getRowLabels,
+  getRowMonthAmount,
   getRowWeekAmount,
   money,
+  monthIndexForDate,
+  monthLabel,
   occurrencesFor,
   overrideKey,
   parseDateOnly,
@@ -102,6 +106,35 @@ describe("occurrencesFor", () => {
       const weeks = occurrencesFor(item({ frequency: "monthly", startDate: "2026-07-13" }), 20, FS);
       const expectedFirstWeek = weekNumberForDate(new Date(2026, 7, 1), FS); // Aug 1, 2026
       expect(weeks[0]).toBe(expectedFirstWeek);
+    });
+  });
+
+  describe("endDate", () => {
+    it("stops a weekly item's occurrences after its end date, inclusive", () => {
+      // Jul13(wk1), Jul20(wk2), Jul27(wk3, == endDate, still included), Aug3(wk4, excluded)
+      const weeks = occurrencesFor(item({ frequency: "weekly", startDate: "2026-07-13", endDate: "2026-07-27" }), 8, FS);
+      expect(weeks).toEqual([1, 2, 3]);
+    });
+
+    it("stops a biweekly item's occurrences after its end date", () => {
+      const weeks = occurrencesFor(item({ frequency: "biweekly", startDate: "2026-07-13", endDate: "2026-07-20" }), 8, FS);
+      expect(weeks).toEqual([1]); // next occurrence (wk3, Jul27) is past the Jul 20 cutoff
+    });
+
+    it("stops a monthly item's occurrences after its end date", () => {
+      const jan1 = new Date(2026, 0, 1);
+      const weeks = occurrencesFor(item({ frequency: "monthly", startDate: "2026-01-01", endDate: "2026-03-01" }), 18, jan1);
+      expect(weeks).toEqual([1, 5, 9]); // Jan1, Feb1, Mar1 — Apr1 is past the Mar 1 cutoff
+    });
+
+    it("has no effect on a one-time item", () => {
+      const weeks = occurrencesFor(item({ frequency: "onetime", startDate: "2026-07-27", endDate: "2026-07-01" }), 12, FS);
+      expect(weeks).toEqual([3]); // endDate before startDate is nonsensical but harmless — ignored
+    });
+
+    it("with no endDate, continues through the full forecast window (unchanged default behavior)", () => {
+      const weeks = occurrencesFor(item({ frequency: "weekly", startDate: "2026-07-13" }), 5, FS);
+      expect(weeks).toEqual([1, 2, 3, 4, 5]);
     });
   });
 });
@@ -266,6 +299,61 @@ describe("computeWeekly", () => {
     const shiftedStart = new Date(2026, 6, 20); // forecastStart moved to match the item's date
     const weeksShifted = computeWeekly(items, {}, 0, 4, shiftedStart);
     expect(weeksShifted.map((w) => w.expense)).toEqual([1000, 0, 0, 0]);
+  });
+});
+
+describe("monthIndexForDate / monthLabel", () => {
+  it("returns 1 for a date in forecastStart's own month", () => {
+    expect(monthIndexForDate(new Date(2026, 6, 25), FS)).toBe(1);
+  });
+  it("counts forward across year boundaries", () => {
+    expect(monthIndexForDate(new Date(2027, 0, 1), FS)).toBe(7); // Jul26->Jan27 is 6 months forward
+  });
+  it("labels a month index as an abbreviated month + year", () => {
+    expect(monthLabel(1, FS)).toBe("Jul 2026");
+    expect(monthLabel(7, FS)).toBe("Jan 2027");
+  });
+});
+
+describe("computeMonthly", () => {
+  it("carries the starting balance forward with no items", () => {
+    const months = computeMonthly([], 1000, 4, FS);
+    expect(months).toHaveLength(4);
+    expect(months.every((m) => m.balance === 1000 && m.net === 0)).toBe(true);
+  });
+
+  it("sums every weekly occurrence that lands within a calendar month", () => {
+    // Weekly $100 rent from Jul13: Jul has 3 occurrences (13,20,27) = 300; Aug has 5 (3,10,17,24,31) = 500.
+    const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
+    const months = computeMonthly(items, 1000, 2, FS);
+    expect(months.map((m) => m.expense)).toEqual([300, 500]);
+    expect(months.map((m) => m.balance)).toEqual([700, 200]);
+    expect(months.map((m) => m.label)).toEqual(["Jul 2026", "Aug 2026"]);
+  });
+
+  it("recurs a monthly item once per month indefinitely without an end date", () => {
+    const items = [item({ type: "income", lineLabel: "Sales", amount: 5000, frequency: "monthly", startDate: "2026-07-01" })];
+    const months = computeMonthly(items, 0, 6, FS);
+    expect(months.map((m) => m.income)).toEqual([5000, 5000, 5000, 5000, 5000, 5000]);
+  });
+
+  it("stops a recurring item's contribution once its end date has passed", () => {
+    const items = [item({ type: "expense", lineLabel: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13", endDate: "2026-08-20" })];
+    const months = computeMonthly(items, 0, 3, FS);
+    // Aug occurrences on/before the 20th: 3, 10, 17 = 300 (24th and 31st are excluded)
+    expect(months.map((m) => m.expense)).toEqual([300, 300, 0]);
+  });
+
+  it("places a one-time item in the single month its date falls in", () => {
+    const items = [item({ type: "income", lineLabel: "Bonus", amount: 2000, frequency: "onetime", startDate: "2026-08-15" })];
+    const months = computeMonthly(items, 0, 3, FS);
+    expect(months.map((m) => m.income)).toEqual([0, 2000, 0]);
+  });
+
+  it("matches getRowMonthAmount for a single-label breakdown", () => {
+    const items = [item({ type: "expense", lineLabel: "Rent", category: "Rent", amount: 100, frequency: "weekly", startDate: "2026-07-13" })];
+    const months = computeMonthly(items, 0, 1, FS);
+    expect(getRowMonthAmount(items, "expense", "Rent", 1, 1, FS)).toBe(months[0].expense);
   });
 });
 

@@ -43,6 +43,16 @@ export default function ItemsList({
                       month: "short",
                       day: "numeric",
                     })}
+                    {item.endDate && (
+                      <>
+                        {" "}
+                        · ends{" "}
+                        {parseDateOnly(item.endDate).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

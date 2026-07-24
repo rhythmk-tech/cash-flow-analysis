@@ -20,6 +20,7 @@ export interface NewItemPayload {
   amount: number;
   frequency: Frequency;
   startDate: string;
+  endDate: string | null;
   lineLabel: string;
 }
 
@@ -43,10 +44,12 @@ export default function AddItemForm({
   const [newCategory, setNewCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [startDate, setStartDate] = useState(() => formatDateOnly(forecastStart));
+  const [endDate, setEndDate] = useState("");
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [submitting, setSubmitting] = useState(false);
 
   const isEditing = Boolean(editingItem);
+  const isRecurring = frequency !== "onetime";
 
   useEffect(() => {
     if (!editingItem) return;
@@ -55,6 +58,7 @@ export default function AddItemForm({
     setNewCategory(editingItem.name);
     setAmount(String(editingItem.amount));
     setStartDate(editingItem.startDate);
+    setEndDate(editingItem.endDate || "");
     setFrequency(editingItem.frequency);
   }, [editingItem]);
 
@@ -70,6 +74,7 @@ export default function AddItemForm({
     setAmount("");
     setNewCategory("");
     setStartDate(formatDateOnly(forecastStart));
+    setEndDate("");
     setFrequency("monthly");
   }
 
@@ -82,6 +87,7 @@ export default function AddItemForm({
     }
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0 || !finalCategory || !startDate) return;
+    if (isRecurring && endDate && endDate < startDate) return;
 
     const payload: NewItemPayload = {
       type: formType,
@@ -90,6 +96,7 @@ export default function AddItemForm({
       amount: amt,
       frequency,
       startDate,
+      endDate: isRecurring && endDate ? endDate : null,
       lineLabel: finalCategory,
     };
 
@@ -184,6 +191,22 @@ export default function AddItemForm({
             </option>
           ))}
         </select>
+        {isRecurring && (
+          <div>
+            <label className="field-label" htmlFor="endDate">
+              End date (optional)
+            </label>
+            <input
+              id="endDate"
+              type="date"
+              className="mono"
+              title="Last date this item recurs — leave blank to keep it recurring through the end of the forecast"
+              min={startDate}
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
+          </div>
+        )}
         {isEditing ? (
           <div className="row2">
             <button className="add-btn" type="submit" disabled={submitting} style={{ flex: 1 }}>

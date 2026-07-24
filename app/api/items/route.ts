@@ -6,8 +6,8 @@ import { logActivity } from "@/lib/activity";
 import { formatDateOnly, money, parseDateOnly } from "@/lib/forecast";
 import { checkAndSendNegativeBalanceAlert } from "@/lib/alerts";
 
-function serializeItem<T extends { startDate: Date }>(item: T) {
-  return { ...item, startDate: formatDateOnly(item.startDate) };
+function serializeItem<T extends { startDate: Date; endDate: Date | null }>(item: T) {
+  return { ...item, startDate: formatDateOnly(item.startDate), endDate: item.endDate ? formatDateOnly(item.endDate) : null };
 }
 
 export async function GET() {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json().catch(() => null);
-  const { type, category, name, amount, frequency, startDate, lineLabel } = body || {};
+  const { type, category, name, amount, frequency, startDate, endDate, lineLabel } = body || {};
 
   if (type !== "income" && type !== "expense") {
     return NextResponse.json({ error: "Invalid type." }, { status: 400 });
@@ -52,6 +52,16 @@ export async function POST(req: Request) {
   if (Number.isNaN(parsedStartDate.getTime())) {
     return NextResponse.json({ error: "Invalid start date." }, { status: 400 });
   }
+  let parsedEndDate: Date | null = null;
+  if (endDate) {
+    parsedEndDate = parseDateOnly(String(endDate));
+    if (Number.isNaN(parsedEndDate.getTime())) {
+      return NextResponse.json({ error: "Invalid end date." }, { status: 400 });
+    }
+    if (parsedEndDate < parsedStartDate) {
+      return NextResponse.json({ error: "End date must be on or after the start date." }, { status: 400 });
+    }
+  }
 
   const item = await prisma.lineItem.create({
     data: {
@@ -62,6 +72,7 @@ export async function POST(req: Request) {
       amount: amt,
       frequency,
       startDate: parsedStartDate,
+      endDate: parsedEndDate,
       lineLabel: lineLabel || category,
     },
   });

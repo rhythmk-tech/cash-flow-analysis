@@ -22,6 +22,7 @@ export default async function DashboardPage() {
         forecastStart: true,
         incomeRowOrder: true,
         expenseRowOrder: true,
+        monthlySummaryMonths: true,
       },
     }),
     prisma.lineItem.findMany({ where: { userId: companyId }, orderBy: { createdAt: "asc" } }),
@@ -40,6 +41,7 @@ export default async function DashboardPage() {
     amount: it.amount,
     frequency: it.frequency as Frequency,
     startDate: formatDateOnly(it.startDate),
+    endDate: it.endDate ? formatDateOnly(it.endDate) : null,
     lineLabel: it.lineLabel,
   }));
 
@@ -68,6 +70,7 @@ export default async function DashboardPage() {
         forecastStart: formatDateOnly(user.forecastStart),
         incomeRowOrder: user.incomeRowOrder,
         expenseRowOrder: user.expenseRowOrder,
+        monthlySummaryMonths: user.monthlySummaryMonths,
       }}
     />
   );

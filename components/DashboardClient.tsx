@@ -28,6 +28,7 @@ import AddItemForm, { NewItemPayload } from "./AddItemForm";
 import ItemsList from "./ItemsList";
 import ImportPanel from "./ImportPanel";
 import DetailTable from "./DetailTable";
+import MonthlySummaryTable from "./MonthlySummaryTable";
 import WeeklyLedger from "./WeeklyLedger";
 import TeamPanel from "./TeamPanel";
 import TrajectoryChart from "./charts/TrajectoryChart";
@@ -39,6 +40,7 @@ import {
   ItemType,
   LineItem,
   OverrideMap,
+  computeMonthly,
   computeScenario,
   computeTips,
   computeWeekly,
@@ -72,6 +74,7 @@ interface Settings {
   forecastStart: string;
   incomeRowOrder: string[];
   expenseRowOrder: string[];
+  monthlySummaryMonths: number;
 }
 
 type Tab = "overview" | "scenarios" | "ledger" | "detail" | "insights" | "team";
@@ -145,6 +148,11 @@ export default function DashboardClient({
   const bull = useMemo(
     () => computeScenario(items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct, forecastStart),
     [items, overridesMap, settings.startingBalance, settings.totalWeeks, settings.bullPct, forecastStart]
+  );
+
+  const monthly = useMemo(
+    () => computeMonthly(items, settings.startingBalance, settings.monthlySummaryMonths, forecastStart),
+    [items, settings.startingBalance, settings.monthlySummaryMonths, forecastStart]
   );
 
   const tips = useMemo(() => computeTips(weekly, settings.startingBalance), [weekly, settings.startingBalance]);
@@ -596,6 +604,14 @@ export default function DashboardClient({
                   incomeOrder={settings.incomeRowOrder}
                   expenseOrder={settings.expenseRowOrder}
                   onReorder={handleReorderRows}
+                  canEdit={canEdit}
+                />
+                <MonthlySummaryTable
+                  items={items}
+                  monthly={monthly}
+                  totalMonths={settings.monthlySummaryMonths}
+                  forecastStart={forecastStart}
+                  onMonthsChange={(v) => saveSettingsDebounced({ monthlySummaryMonths: v })}
                   canEdit={canEdit}
                 />
               </div>

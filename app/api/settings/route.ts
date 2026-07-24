@@ -13,6 +13,7 @@ function serialize(user: {
   bearPct: number;
   bullPct: number;
   forecastStart: Date;
+  monthlySummaryMonths: number;
 }) {
   return { ...user, forecastStart: formatDateOnly(user.forecastStart) };
 }
@@ -30,6 +31,7 @@ export async function GET() {
       bearPct: true,
       bullPct: true,
       forecastStart: true,
+      monthlySummaryMonths: true,
     },
   });
   if (!user) return NextResponse.json({ error: "Not found." }, { status: 404 });
@@ -54,6 +56,11 @@ export async function PUT(req: Request) {
   if (body?.totalWeeks !== undefined) {
     const v = Math.min(26, Math.max(4, Number(body.totalWeeks) || 12));
     data.totalWeeks = v;
+  }
+  if (body?.monthlySummaryMonths !== undefined) {
+    const raw = Number(body.monthlySummaryMonths);
+    const v = Math.min(24, Math.max(1, Number.isFinite(raw) ? raw : 12));
+    data.monthlySummaryMonths = v;
   }
   if (body?.bearPct !== undefined) {
     const v = Number(body.bearPct);
@@ -83,12 +90,14 @@ export async function PUT(req: Request) {
       bearPct: true,
       bullPct: true,
       forecastStart: true,
+      monthlySummaryMonths: true,
     },
   });
 
   const changeDescriptions: string[] = [];
   if (data.startingBalance !== undefined) changeDescriptions.push(`starting balance to ${money(data.startingBalance as number)}`);
   if (data.totalWeeks !== undefined) changeDescriptions.push(`forecast length to ${data.totalWeeks} weeks`);
+  if (data.monthlySummaryMonths !== undefined) changeDescriptions.push(`monthly summary length to ${data.monthlySummaryMonths} months`);
   if (data.bearPct !== undefined) changeDescriptions.push(`bear scenario to ${data.bearPct}%`);
   if (data.bullPct !== undefined) changeDescriptions.push(`bull scenario to ${data.bullPct}%`);
   if (data.forecastStart !== undefined) changeDescriptions.push(`Week 1 start date to ${formatDateOnly(data.forecastStart as Date)}`);
