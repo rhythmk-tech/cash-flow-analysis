@@ -248,7 +248,7 @@ export default function DetailTable({
     <div className="card">
       <div className="card-head">
         <h2>Detailed cash forecast</h2>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
             type="button"
             className="link-btn"

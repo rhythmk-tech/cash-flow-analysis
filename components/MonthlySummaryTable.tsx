@@ -43,7 +43,7 @@ export default function MonthlySummaryTable({
     <div className="card" style={{ marginTop: 24 }}>
       <div className="card-head">
         <h2>Monthly cash flow summary</h2>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <label className="pill" style={{ display: "inline-flex" }}>
             <span className="label">Months</span>
             <input

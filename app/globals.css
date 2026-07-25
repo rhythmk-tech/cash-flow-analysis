@@ -139,7 +139,7 @@ input[type="checkbox"] {
 .kpi-value { font-size: 27px; font-weight: 700; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.5px; }
 .kpi-value-sub {
   font-size: 12.5px; font-weight: 500; font-family: 'Inter', sans-serif; color: var(--inkFaint);
-  letter-spacing: 0; margin-left: 6px;
+  letter-spacing: 0; margin-left: 6px; white-space: nowrap;
 }
 
 /* ---- main layout ---- */
@@ -229,6 +229,7 @@ input[type="checkbox"] {
   align-self: flex-start; border: none; background: transparent; color: var(--accent);
   font-size: 13px; font-weight: 600; cursor: pointer; padding: 0; text-decoration: none;
   display: inline-flex; align-items: center; gap: 5px; transition: opacity .15s var(--ease);
+  white-space: nowrap;
 }
 .link-btn svg { flex-shrink: 0; }
 .link-btn:hover { opacity: 0.72; }

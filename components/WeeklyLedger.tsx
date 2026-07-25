@@ -72,7 +72,7 @@ export default function WeeklyLedger({
     <div className="card">
       <div className="card-head">
         <h2>Weekly ledger</h2>
-        <div style={{ display: "flex", gap: 12 }}>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <button
             type="button"
             className="link-btn"
