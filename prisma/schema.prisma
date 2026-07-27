@@ -25,6 +25,20 @@ model User {
   // directly in the database for whichever account(s) should have it.
   isPlatformAdmin Boolean @default(false)
 
+  // Billing — dormant scaffolding for a future paid plan. Only meaningful when this user IS a
+  // company (activeCompanyId is null), same as the forecast settings below. Nothing in the app
+  // reads these to gate a feature today: the product is free for everyone regardless of what's
+  // here. Populated by the Stripe webhook once STRIPE_SECRET_KEY is configured (see
+  // lib/stripe.ts) and a checkout actually completes; until then every row stays entirely null.
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  // Mirrors the Stripe Subscription.status values verbatim (e.g. "active", "trialing",
+  // "past_due", "canceled") rather than a bespoke enum, so the webhook handler can just pass
+  // it through without a translation table that has to be kept in sync with Stripe's own states.
+  subscriptionStatus   String?
+  subscriptionPlan     String?
+  currentPeriodEnd     DateTime?
+
   // Forecast settings — only meaningful when this user IS a company (activeCompanyId is null).
   // Members who joined another company via invite read/write the owner's row instead.
   startingBalance Float    @default(0)
