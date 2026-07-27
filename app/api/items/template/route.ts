@@ -50,17 +50,49 @@ export async function GET(req: Request) {
     "↑ Replace the rows above with your real numbers, or delete them and add your own.";
   sheet.getCell(`A${sheet.rowCount}`).font = { italic: true, color: { argb: "FF9CA3AF" }, size: 10 };
 
+  // Dropdowns for Type (A) and Frequency (E), covering well past the example rows so pasted-in
+  // or newly typed rows keep the same validation without the user needing to re-apply it.
+  //
+  // Applied via the whole-range API rather than per-cell (`cell.dataValidation = ...` in a
+  // loop): ExcelJS's range-merge optimizer sorts cell addresses as plain strings ("A10" sorts
+  // before "A2"), which corrupts its contiguous-range detection once row numbers cross the
+  // single/double-digit boundary — it was emitting duplicate overlapping <dataValidation>
+  // entries (e.g. both A2:A500 and A10:A500) for a per-cell loop over 500 rows. Adding one
+  // entry keyed by the range string itself bypasses that per-cell expansion entirely.
+  // `dataValidations` isn't in ExcelJS's TS types even though it exists at runtime.
+  const dataValidations = (sheet as unknown as { dataValidations: { add(address: string, validation: object): void } })
+    .dataValidations;
+  const LAST_TEMPLATE_ROW = 500;
+  dataValidations.add(`A2:A${LAST_TEMPLATE_ROW}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: ['"income,expense"'],
+    showErrorMessage: true,
+    errorStyle: "error",
+    errorTitle: "Invalid type",
+    error: 'Choose "income" or "expense" from the dropdown.',
+  });
+  dataValidations.add(`E2:E${LAST_TEMPLATE_ROW}`, {
+    type: "list",
+    allowBlank: true,
+    formulae: ['"onetime,weekly,biweekly,monthly"'],
+    showErrorMessage: true,
+    errorStyle: "error",
+    errorTitle: "Invalid frequency",
+    error: 'Choose one of "onetime", "weekly", "biweekly", or "monthly" from the dropdown.',
+  });
+
   const infoSheet = workbook.addWorksheet("Instructions");
   infoSheet.columns = [{ width: 100 }];
   const lines = [
     "How to use this template",
     "",
     "1. On the \"Cash Flow Data\" sheet, replace the example rows with your own income and expenses (or delete them and add your own from scratch).",
-    "2. Type — must be exactly \"income\" or \"expense\".",
+    "2. Type — \"income\" or \"expense\". Click a cell in this column for a dropdown.",
     "3. Category — a bucket like Rent, Payroll, or Sales Revenue. Use whatever makes sense for your business; new categories are created automatically.",
     "4. Name — a short label for this line item, e.g. \"Office rent\".",
     "5. Amount — a positive number, no dollar sign or commas needed (e.g. 3200, not $3,200).",
-    "6. Frequency — one of: onetime, weekly, biweekly, monthly. Monthly items recur on the 1st of each calendar month.",
+    "6. Frequency — onetime, weekly, biweekly, or monthly. Click a cell in this column for a dropdown. Monthly items recur on the 1st of each calendar month.",
     "7. Date — the date (YYYY-MM-DD) this item first occurs. For monthly items, any date in the starting month works — it will be anchored to the 1st.",
     "",
     "Once filled in, save this file and upload it on the \"Bulk import from a file\" panel in your dashboard.",
