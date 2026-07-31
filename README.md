@@ -1,4 +1,4 @@
-# Cash Flow Forecaster
+# Nettflo
 
 A multi-tenant weekly cash flow forecasting tool. Each company gets its own account, adds its
 income/expense line items (manually or via CSV import), and gets charts, scenario planning, and

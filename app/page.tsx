@@ -102,11 +102,11 @@ export default async function Home() {
     <div className="landing">
       <nav className="landing-nav">
         <div className="brand">
-          <div className="brand-mark">CF</div>
-          <span className="landing-nav-name">Cash Flow Forecaster</span>
+          <div className="brand-mark">N</div>
+          <span className="landing-nav-name">Nettflo</span>
         </div>
         <div className="landing-nav-cta">
-          <div className="brand-mark" aria-hidden="true">CF</div>
+          <div className="brand-mark" aria-hidden="true">N</div>
           {session ? (
             <Link className="btn-secondary" href="/dashboard">
               Go to your dashboard
@@ -128,7 +128,7 @@ export default async function Home() {
           <p>
             Most small businesses still manage cash flow by hand: a spreadsheet somebody updates
             when they remember to, a mental note about which invoices are late, and a gut feeling
-            about whether payroll clears next week. Cash Flow Forecaster replaces that guesswork
+            about whether payroll clears next week. Nettflo replaces that guesswork
             with a living model of your business — enter your income and expenses once, and every
             chart, scenario, and warning updates automatically as your numbers change, so you see
             a cash crunch weeks before it happens, not the day it does.
@@ -238,7 +238,7 @@ export default async function Home() {
       </section>
 
       <section className="landing-problem">
-        <h2>The old way vs. Cash Flow Forecaster</h2>
+        <h2>The old way vs. Nettflo</h2>
         <div className="landing-compare">
           <div className="landing-compare-col landing-compare-old">
             <h3>Manual spreadsheet tracking</h3>
@@ -249,7 +249,7 @@ export default async function Home() {
             </ul>
           </div>
           <div className="landing-compare-col landing-compare-new">
-            <h3>With Cash Flow Forecaster</h3>
+            <h3>With Nettflo</h3>
             <ul>
               {NEW_WAY.map((line) => (
                 <li key={line}>{line}</li>
@@ -288,7 +288,7 @@ export default async function Home() {
       </section>
 
       <footer className="landing-footer">
-        <span className="landing-footer-copy">© {new Date().getFullYear()} Cash Flow Forecaster</span>
+        <span className="landing-footer-copy">© {new Date().getFullYear()} Nettflo</span>
         <div className="landing-footer-links">
           <Link href="/privacy">Privacy Policy</Link>
           <Link href="/terms">Terms of Service</Link>

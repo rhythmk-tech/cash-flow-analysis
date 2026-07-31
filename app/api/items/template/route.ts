@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const nextMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
 
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = "Cash Flow Forecaster";
+  workbook.creator = "Nettflo";
   workbook.created = new Date();
 
   const sheet = workbook.addWorksheet("Cash Flow Data");

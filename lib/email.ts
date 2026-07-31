@@ -1,9 +1,9 @@
 import { Resend } from "resend";
 
 // Resend's shared sandbox sender — works without verifying a custom domain, so email works out
-// of the box. Swap for a verified domain address (e.g. "Cash Flow Forecaster <noreply@yourdomain.com>")
+// of the box. Swap for a verified domain address (e.g. "Nettflo <noreply@yourdomain.com>")
 // once one is set up; onboarding@resend.dev is meant for getting started, not high-volume sending.
-const FROM = "Cash Flow Forecaster <onboarding@resend.dev>";
+const FROM = "Nettflo <onboarding@resend.dev>";
 
 let resendClient: Resend | null | undefined;
 
@@ -42,17 +42,17 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 function layout(title: string, bodyHtml: string): string {
   return `
     <div style="font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-      <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #4F46E5, #7C77F0); color: white; font-family: Georgia, serif; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">CF</div>
+      <div style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #4F46E5, #7C77F0); color: white; font-family: Georgia, serif; font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">N</div>
       <h1 style="font-size: 20px; margin: 0 0 16px; color: #12151C;">${title}</h1>
       ${bodyHtml}
-      <p style="font-size: 12px; color: #9CA3AF; margin-top: 32px;">Cash Flow Forecaster</p>
+      <p style="font-size: 12px; color: #9CA3AF; margin-top: 32px;">Nettflo</p>
     </div>
   `;
 }
 
 export function passwordResetEmail(resetUrl: string): { subject: string; html: string } {
   return {
-    subject: "Reset your Cash Flow Forecaster password",
+    subject: "Reset your Nettflo password",
     html: layout(
       "Reset your password",
       `
@@ -76,7 +76,7 @@ export function teamInviteEmail(companyName: string, inviterEmail: string, role:
   html: string;
 } {
   return {
-    subject: `${inviterEmail} invited you to ${companyName} on Cash Flow Forecaster`,
+    subject: `${inviterEmail} invited you to ${companyName} on Nettflo`,
     html: layout(
       `Join ${companyName}`,
       `

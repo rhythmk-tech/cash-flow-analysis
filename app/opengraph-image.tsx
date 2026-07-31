@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Cash Flow Forecaster";
+export const alt = "Nettflo";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -30,7 +30,7 @@ export default function OpengraphImage() {
           />
         </svg>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 68, fontWeight: 700, color: "#ffffff" }}>Cash Flow Forecaster</div>
+          <div style={{ fontSize: 68, fontWeight: 700, color: "#ffffff" }}>Nettflo</div>
           <div style={{ fontSize: 30, color: "#d1fae5", marginTop: 18 }}>
             Weekly cash flow forecasting for your business
           </div>

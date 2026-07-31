@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
-  title: "Terms of Service — Cash Flow Forecaster",
+  title: "Terms of Service — Nettflo",
 };
 
 export default function TermsPage() {
@@ -10,8 +10,8 @@ export default function TermsPage() {
     <div className="legal-shell">
       <nav className="legal-nav">
         <div className="brand">
-          <div className="brand-mark">CF</div>
-          <span className="landing-nav-name">Cash Flow Forecaster</span>
+          <div className="brand-mark">N</div>
+          <span className="landing-nav-name">Nettflo</span>
         </div>
         <Link className="btn-secondary" href="/">
           Back to home
@@ -35,14 +35,14 @@ export default function TermsPage() {
         </div>
 
         <p>
-          These Terms of Service (&quot;Terms&quot;) govern your access to and use of Cash Flow Forecaster (the &quot;Service&quot;), operated by{" "}
+          These Terms of Service (&quot;Terms&quot;) govern your access to and use of Nettflo (the &quot;Service&quot;), operated by{" "}
           <span className="legal-placeholder">[COMPANY LEGAL NAME]</span>{" "}
           (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;). By creating an account or using the Service, you agree to be bound by these Terms. If you are using the Service on behalf of a company, you represent that you have authority to bind that company to these Terms.
         </p>
 
         <h2>1. The Service</h2>
         <p>
-          Cash Flow Forecaster lets you record income and expense line items and generates weekly cash flow forecasts, scenarios, and reports from the data you enter. The Service does not connect to your bank accounts, move money, or provide financial, tax, or investment advice. Forecasts are only as accurate as the data you provide.
+          Nettflo lets you record income and expense line items and generates weekly cash flow forecasts, scenarios, and reports from the data you enter. The Service does not connect to your bank accounts, move money, or provide financial, tax, or investment advice. Forecasts are only as accurate as the data you provide.
         </p>
 
         <h2>2. Accounts</h2>

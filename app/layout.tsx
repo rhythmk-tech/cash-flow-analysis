@@ -3,7 +3,7 @@ import "./globals.css";
 import Providers from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Cash Flow Forecaster",
+  title: "Nettflo",
   description: "Personalized weekly cash flow forecasting for your company",
 };
 

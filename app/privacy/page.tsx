@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 
 export const metadata = {
-  title: "Privacy Policy — Cash Flow Forecaster",
+  title: "Privacy Policy — Nettflo",
 };
 
 export default function PrivacyPage() {
@@ -10,8 +10,8 @@ export default function PrivacyPage() {
     <div className="legal-shell">
       <nav className="legal-nav">
         <div className="brand">
-          <div className="brand-mark">CF</div>
-          <span className="landing-nav-name">Cash Flow Forecaster</span>
+          <div className="brand-mark">N</div>
+          <span className="landing-nav-name">Nettflo</span>
         </div>
         <Link className="btn-secondary" href="/">
           Back to home
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
 
         <p>
           <span className="legal-placeholder">[COMPANY LEGAL NAME]</span>{" "}
-          (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Cash Flow Forecaster (the &quot;Service&quot;). This Privacy Policy explains what information we collect, how we use it, who we share it with, and the choices you have. By creating an account or otherwise using the Service, you agree to the collection and use of information in accordance with this policy.
+          (&quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) operates Nettflo (the &quot;Service&quot;). This Privacy Policy explains what information we collect, how we use it, who we share it with, and the choices you have. By creating an account or otherwise using the Service, you agree to the collection and use of information in accordance with this policy.
         </p>
 
         <h2>1. Information we collect</h2>
