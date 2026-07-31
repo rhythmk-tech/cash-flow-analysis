@@ -94,33 +94,36 @@ describe("mapPurchaseToExpenseRow", () => {
       frequency: "onetime",
       startDate: "2026-07-15",
       lineLabel: "Acme Office Supplies",
+      quickBooksTxnId: "Purchase:123",
     });
   });
 
   it("falls back to a generic label when there's no vendor", () => {
-    const row = mapPurchaseToExpenseRow({ TotalAmt: 50, TxnDate: "2026-07-15" });
+    const row = mapPurchaseToExpenseRow({ Id: "9", TotalAmt: 50, TxnDate: "2026-07-15" });
     expect(row?.category).toBe("QuickBooks expense");
   });
 
   it("returns null for a zero or missing amount", () => {
-    expect(mapPurchaseToExpenseRow({ TotalAmt: 0, TxnDate: "2026-07-15" })).toBeNull();
-    expect(mapPurchaseToExpenseRow({ TxnDate: "2026-07-15" })).toBeNull();
+    expect(mapPurchaseToExpenseRow({ Id: "9", TotalAmt: 0, TxnDate: "2026-07-15" })).toBeNull();
+    expect(mapPurchaseToExpenseRow({ Id: "9", TxnDate: "2026-07-15" })).toBeNull();
   });
 
   it("returns null for a missing or invalid date", () => {
-    expect(mapPurchaseToExpenseRow({ TotalAmt: 50 })).toBeNull();
-    expect(mapPurchaseToExpenseRow({ TotalAmt: 50, TxnDate: "not-a-date" })).toBeNull();
+    expect(mapPurchaseToExpenseRow({ Id: "9", TotalAmt: 50 })).toBeNull();
+    expect(mapPurchaseToExpenseRow({ Id: "9", TotalAmt: 50, TxnDate: "not-a-date" })).toBeNull();
+  });
+
+  it("returns null when there's no transaction Id to dedupe against", () => {
+    expect(mapPurchaseToExpenseRow({ TotalAmt: 50, TxnDate: "2026-07-15" })).toBeNull();
   });
 });
 
 describe("mapSalesTransactionToIncomeRow", () => {
-  it("maps a customer invoice to a one-time income row", () => {
-    const row = mapSalesTransactionToIncomeRow({
-      Id: "456",
-      TotalAmt: 1800,
-      TxnDate: "2026-08-01",
-      CustomerRef: { name: "Beta Client LLC" },
-    });
+  it("maps a customer invoice to a one-time income row, namespacing the Id by entity type", () => {
+    const row = mapSalesTransactionToIncomeRow(
+      { Id: "456", TotalAmt: 1800, TxnDate: "2026-08-01", CustomerRef: { name: "Beta Client LLC" } },
+      "Invoice"
+    );
     expect(row).toEqual({
       type: "income",
       category: "Beta Client LLC",
@@ -129,16 +132,26 @@ describe("mapSalesTransactionToIncomeRow", () => {
       frequency: "onetime",
       startDate: "2026-08-01",
       lineLabel: "Beta Client LLC",
+      quickBooksTxnId: "Invoice:456",
     });
   });
 
+  it("namespaces a SalesReceipt separately from an Invoice with the same QuickBooks Id", () => {
+    const row = mapSalesTransactionToIncomeRow({ Id: "456", TotalAmt: 80, TxnDate: "2026-08-01" }, "SalesReceipt");
+    expect(row?.quickBooksTxnId).toBe("SalesReceipt:456");
+  });
+
   it("falls back to a generic label when there's no customer", () => {
-    const row = mapSalesTransactionToIncomeRow({ TotalAmt: 1800, TxnDate: "2026-08-01" });
+    const row = mapSalesTransactionToIncomeRow({ Id: "9", TotalAmt: 1800, TxnDate: "2026-08-01" }, "Invoice");
     expect(row?.category).toBe("QuickBooks income");
   });
 
   it("returns null for a zero or missing amount", () => {
-    expect(mapSalesTransactionToIncomeRow({ TotalAmt: 0, TxnDate: "2026-08-01" })).toBeNull();
-    expect(mapSalesTransactionToIncomeRow({ TxnDate: "2026-08-01" })).toBeNull();
+    expect(mapSalesTransactionToIncomeRow({ Id: "9", TotalAmt: 0, TxnDate: "2026-08-01" }, "Invoice")).toBeNull();
+    expect(mapSalesTransactionToIncomeRow({ Id: "9", TxnDate: "2026-08-01" }, "Invoice")).toBeNull();
+  });
+
+  it("returns null when there's no transaction Id to dedupe against", () => {
+    expect(mapSalesTransactionToIncomeRow({ TotalAmt: 1800, TxnDate: "2026-08-01" }, "Invoice")).toBeNull();
   });
 });

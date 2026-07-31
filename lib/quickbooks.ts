@@ -193,6 +193,9 @@ export interface QuickBooksImportRow {
   frequency: "onetime";
   startDate: string; // "YYYY-MM-DD"
   lineLabel: string;
+  // Namespaced by entity type ("Purchase:123") since QuickBooks Ids are only unique within one
+  // entity type, not globally — see LineItem.quickBooksTxnId in the schema for why this exists.
+  quickBooksTxnId: string;
 }
 
 export interface QBOPurchase {
@@ -219,15 +222,36 @@ function parseQboDate(txnDate: string | undefined): string | null {
 export function mapPurchaseToExpenseRow(purchase: QBOPurchase): QuickBooksImportRow | null {
   const amount = purchase.TotalAmt;
   const startDate = parseQboDate(purchase.TxnDate);
-  if (!amount || amount <= 0 || !startDate) return null;
+  if (!amount || amount <= 0 || !startDate || !purchase.Id) return null;
   const label = purchase.EntityRef?.name || "QuickBooks expense";
-  return { type: "expense", category: label, name: label, amount, frequency: "onetime", startDate, lineLabel: label };
+  return {
+    type: "expense",
+    category: label,
+    name: label,
+    amount,
+    frequency: "onetime",
+    startDate,
+    lineLabel: label,
+    quickBooksTxnId: `Purchase:${purchase.Id}`,
+  };
 }
 
-export function mapSalesTransactionToIncomeRow(txn: QBOSalesTransaction): QuickBooksImportRow | null {
+export function mapSalesTransactionToIncomeRow(
+  txn: QBOSalesTransaction,
+  entityType: "Invoice" | "SalesReceipt"
+): QuickBooksImportRow | null {
   const amount = txn.TotalAmt;
   const startDate = parseQboDate(txn.TxnDate);
-  if (!amount || amount <= 0 || !startDate) return null;
+  if (!amount || amount <= 0 || !startDate || !txn.Id) return null;
   const label = txn.CustomerRef?.name || "QuickBooks income";
-  return { type: "income", category: label, name: label, amount, frequency: "onetime", startDate, lineLabel: label };
+  return {
+    type: "income",
+    category: label,
+    name: label,
+    amount,
+    frequency: "onetime",
+    startDate,
+    lineLabel: label,
+    quickBooksTxnId: `${entityType}:${txn.Id}`,
+  };
 }

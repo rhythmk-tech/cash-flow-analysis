@@ -60,11 +60,34 @@ export async function POST(req: Request) {
   }
 
   const expenseRows = (purchases.QueryResponse?.Purchase || []).map(mapPurchaseToExpenseRow).filter((r) => r !== null);
-  const incomeRows = [...(sales.QueryResponse?.Invoice || []), ...(cashSales.QueryResponse?.SalesReceipt || [])]
-    .map(mapSalesTransactionToIncomeRow)
-    .filter((r) => r !== null);
-  const rows = [...expenseRows, ...incomeRows];
-  const skipped = (purchases.QueryResponse?.Purchase?.length || 0) + (sales.QueryResponse?.Invoice?.length || 0) + (cashSales.QueryResponse?.SalesReceipt?.length || 0) - rows.length;
+  const incomeRows = [
+    ...(sales.QueryResponse?.Invoice || []).map((txn) => mapSalesTransactionToIncomeRow(txn, "Invoice")),
+    ...(cashSales.QueryResponse?.SalesReceipt || []).map((txn) => mapSalesTransactionToIncomeRow(txn, "SalesReceipt")),
+  ].filter((r) => r !== null);
+  const totalFetched =
+    (purchases.QueryResponse?.Purchase?.length || 0) +
+    (sales.QueryResponse?.Invoice?.length || 0) +
+    (cashSales.QueryResponse?.SalesReceipt?.length || 0);
+  const unmappable = totalFetched - expenseRows.length - incomeRows.length;
+
+  // Re-running a sync (the "Sync now" button has no reason not to be clicked more than once)
+  // must never create duplicate line items for a transaction already imported — check what's
+  // already here before inserting anything new.
+  const alreadyImported = new Set(
+    (
+      await prisma.lineItem.findMany({
+        where: { userId: session.companyId, quickBooksTxnId: { not: null } },
+        select: { quickBooksTxnId: true },
+      })
+    ).map((i) => i.quickBooksTxnId)
+  );
+  const seenThisRun = new Set<string>();
+  const rows = [...expenseRows, ...incomeRows].filter((row) => {
+    if (alreadyImported.has(row.quickBooksTxnId) || seenThisRun.has(row.quickBooksTxnId)) return false;
+    seenThisRun.add(row.quickBooksTxnId);
+    return true;
+  });
+  const skipped = unmappable + (expenseRows.length + incomeRows.length - rows.length);
 
   if (rows.length === 0) {
     return NextResponse.json({ imported: 0, skipped, items: [] });
@@ -82,6 +105,7 @@ export async function POST(req: Request) {
           frequency: row.frequency,
           startDate: new Date(`${row.startDate}T00:00:00`),
           lineLabel: row.lineLabel,
+          quickBooksTxnId: row.quickBooksTxnId,
         },
       })
     )

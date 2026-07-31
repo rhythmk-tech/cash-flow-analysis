@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
@@ -109,8 +109,22 @@ export default function DashboardClient({
   const [settings, setSettings] = useState<Settings>(initialSettings);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [quickbooksCallback, setQuickbooksCallback] = useState<"connected" | "error" | null>(null);
   const forecastStart = useMemo(() => parseDateOnly(settings.forecastStart), [settings.forecastStart]);
   const settingsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // The QuickBooks OAuth callback redirects here with ?quickbooks=connected|error — jump
+  // straight to the Team tab (where the Connect button lives) and clear the param so a refresh
+  // doesn't re-trigger the banner.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qb = params.get("quickbooks");
+    if (qb === "connected" || qb === "error") {
+      setQuickbooksCallback(qb);
+      setActiveTab("team");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const overridesMap: OverrideMap = useMemo(() => {
     const map: OverrideMap = {};
@@ -649,7 +663,7 @@ export default function DashboardClient({
 
             {activeTab === "team" && (
               <div className="tab-panel active">
-                <TeamPanel />
+                <TeamPanel quickbooksCallback={quickbooksCallback} />
               </div>
             )}
               </>

@@ -10,6 +10,7 @@ import {
   MemberRole,
   ROLE_DESCRIPTIONS,
   ROLE_LABELS,
+  canEditData,
   canRemoveMember,
 } from "@/lib/roles";
 
@@ -46,6 +47,13 @@ interface ActivityEntry {
   createdAt: string;
 }
 
+interface QuickBooksStatus {
+  enabled: boolean;
+  connected: boolean;
+  connectedAt?: string | null;
+  lastSyncedAt?: string | null;
+}
+
 function relativeTime(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
   const mins = Math.floor(diffMs / 60000);
@@ -58,7 +66,7 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString();
 }
 
-export default function TeamPanel() {
+export default function TeamPanel({ quickbooksCallback }: { quickbooksCallback?: "connected" | "error" | null }) {
   const router = useRouter();
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,6 +87,12 @@ export default function TeamPanel() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
 
+  const [qbStatus, setQbStatus] = useState<QuickBooksStatus | null>(null);
+  const [qbSyncing, setQbSyncing] = useState(false);
+  const [qbDisconnecting, setQbDisconnecting] = useState(false);
+  const [qbError, setQbError] = useState("");
+  const [qbSyncResult, setQbSyncResult] = useState<{ imported: number; skipped: number } | null>(null);
+
   async function load() {
     setLoading(true);
     const res = await fetch("/api/team");
@@ -93,13 +107,49 @@ export default function TeamPanel() {
     setLoadingActivity(false);
   }
 
+  async function loadQuickBooksStatus() {
+    const res = await fetch("/api/quickbooks/status");
+    if (res.ok) setQbStatus(await res.json());
+  }
+
   useEffect(() => {
     load();
+    loadQuickBooksStatus();
   }, []);
 
   useEffect(() => {
     if (data?.canManageTeam) loadActivity();
   }, [data?.canManageTeam]);
+
+  async function handleQuickBooksSync() {
+    setQbError("");
+    setQbSyncResult(null);
+    setQbSyncing(true);
+    const res = await fetch("/api/quickbooks/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const result = await res.json().catch(() => ({}));
+    setQbSyncing(false);
+    if (!res.ok) {
+      setQbError(result?.error || "Couldn't sync with QuickBooks.");
+      return;
+    }
+    setQbSyncResult({ imported: result.imported, skipped: result.skipped });
+    loadQuickBooksStatus();
+  }
+
+  async function handleQuickBooksDisconnect() {
+    if (!window.confirm("Disconnect QuickBooks? This won't remove any items already imported.")) return;
+    setQbError("");
+    setQbDisconnecting(true);
+    const res = await fetch("/api/quickbooks/disconnect", { method: "POST" });
+    setQbDisconnecting(false);
+    if (!res.ok) {
+      const result = await res.json().catch(() => ({}));
+      setQbError(result?.error || "Couldn't disconnect QuickBooks.");
+      return;
+    }
+    setQbSyncResult(null);
+    loadQuickBooksStatus();
+  }
 
   // Owner can invite as Admin/Editor/Viewer; an Admin can only invite as Editor/Viewer
   // (mirrors the server-side canAssignRole check — see lib/roles.ts).
@@ -349,6 +399,82 @@ export default function TeamPanel() {
           })}
         </div>
       </div>
+
+      {qbStatus?.enabled && (
+        <div className="items-section">
+          <div className="items-count">QuickBooks</div>
+
+          {quickbooksCallback === "connected" && (
+            <div className="tip success" style={{ display: "block", marginBottom: 12 }}>
+              <p style={{ fontWeight: 600 }}>QuickBooks connected.</p>
+            </div>
+          )}
+          {quickbooksCallback === "error" && (
+            <div className="tip warning" style={{ display: "block", marginBottom: 12 }}>
+              <p style={{ fontWeight: 600 }}>Couldn&apos;t connect QuickBooks — try again.</p>
+            </div>
+          )}
+          {qbError && <p style={{ color: "var(--expense)", fontSize: 12.5, marginBottom: 10 }}>{qbError}</p>}
+          {qbSyncResult && (
+            <div className="tip success" style={{ display: "block", marginBottom: 12 }}>
+              <p style={{ fontWeight: 600 }}>
+                Imported {qbSyncResult.imported} item{qbSyncResult.imported === 1 ? "" : "s"} from QuickBooks
+                {qbSyncResult.skipped > 0
+                  ? ` (${qbSyncResult.skipped} already imported or skipped)`
+                  : ""}
+                .
+              </p>
+            </div>
+          )}
+
+          {!qbStatus.connected ? (
+            data.isOwner ? (
+              <>
+                <p className="sub" style={{ display: "block", marginBottom: 10 }}>
+                  Pull recent income and expenses in directly from QuickBooks instead of entering them by hand.
+                </p>
+                <a className="add-btn" href="/api/quickbooks/connect" style={{ textDecoration: "none", textAlign: "center" }}>
+                  Connect QuickBooks
+                </a>
+              </>
+            ) : (
+              <p className="sub">Only the account owner can connect QuickBooks.</p>
+            )
+          ) : (
+            <>
+              <div className="item-row">
+                <div className="item-left">
+                  <span className="dot" style={{ background: "var(--income)" }} />
+                  <div>
+                    <div className="item-name">Connected</div>
+                    <div className="item-meta">
+                      {qbStatus.lastSyncedAt ? `Last synced ${relativeTime(qbStatus.lastSyncedAt)}` : "Never synced yet"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="row2" style={{ marginTop: 10 }}>
+                {canEditData(data.myRole) && (
+                  <button type="button" className="add-btn" onClick={handleQuickBooksSync} disabled={qbSyncing} style={{ flex: 1 }}>
+                    {qbSyncing ? "Syncing…" : "Sync now"}
+                  </button>
+                )}
+                {data.isOwner && (
+                  <button
+                    type="button"
+                    className="cancel-btn"
+                    onClick={handleQuickBooksDisconnect}
+                    disabled={qbDisconnecting}
+                    style={{ flex: 1 }}
+                  >
+                    {qbDisconnecting ? "Disconnecting…" : "Disconnect"}
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {data.canManageTeam && (
         <div className="items-section">

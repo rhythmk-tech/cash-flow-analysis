@@ -153,6 +153,14 @@ model LineItem {
   lineLabel String
   createdAt DateTime @default(now())
 
+  // Set only for items created by a QuickBooks sync (see app/api/quickbooks/sync) — the source
+  // transaction's QuickBooks Id, namespaced by entity type (e.g. "Purchase:123") since QuickBooks
+  // Ids are only unique within one entity type, not globally. Null for every manually-added or
+  // CSV-imported item. The unique constraint below is what makes re-running a sync safe: a
+  // transaction that was already imported is skipped instead of creating a duplicate line item.
+  quickBooksTxnId String?
+
+  @@unique([userId, quickBooksTxnId])
   @@index([userId])
 }
 
