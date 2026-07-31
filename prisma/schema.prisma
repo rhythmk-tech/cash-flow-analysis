@@ -81,6 +81,11 @@ model User {
   actuals   Actual[]
 
   passwordResetTokens PasswordResetToken[]
+
+  // Dormant scaffolding for a future QuickBooks Online sync — see lib/quickbooks.ts. Null/absent
+  // until STRIPE-style env vars (QUICKBOOKS_CLIENT_ID etc.) are configured and the owner actually
+  // completes the OAuth connect flow; nothing reads this to gate any feature today.
+  quickBooksConnection QuickBooksConnection?
 }
 
 model Invitation {
@@ -106,6 +111,28 @@ model PasswordResetToken {
   usedAt    DateTime?
 
   @@index([userId])
+}
+
+// One row per company that has connected QuickBooks Online, created only once the OAuth
+// connect flow (app/api/quickbooks/connect + callback) actually completes. Tokens are stored
+// in plain text rather than encrypted — acceptable for now since the whole feature is dormant
+// and unreachable without QUICKBOOKS_CLIENT_ID/SECRET configured, but worth encrypting at rest
+// before this goes live for real customers.
+model QuickBooksConnection {
+  id     String @id @default(cuid())
+  userId String @unique // company owner's User.id — only the owner can connect/disconnect
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  realmId String // QuickBooks' own company identifier — required on every API call
+
+  accessToken           String
+  refreshToken          String
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime // refresh tokens are rotated on every use and expire after ~100 days of no use
+
+  lastSyncedAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 model LineItem {
